@@ -23,6 +23,8 @@ const CHARCODE_RBRACE = ('}').charCodeAt(0),
       CHARCODE_ASTERISK = ('*').charCodeAt(0),
       CHARCODE_RPAREN = (')').charCodeAt(0);
 
+const RE_CAN_PIPELINE_CMD = /^(?:UID )?FETCH$/;
+
 /**
  * A buffer for us to assemble buffers so the back-end doesn't fragment them.
  * This is safe for mozTCPSocket's buffer usage because the buffer is always
@@ -1347,28 +1349,51 @@ ImapConnection.prototype._noop = function() {
 // folders prior to this.
 ImapConnection.prototype._send = function(cmdstr, cmddata, cb, dispatchFunc,
                                           bypass) {
-  if (cmdstr !== undefined && !bypass)
-    this._state.requests.push(
+  var addedIndex = null;
+  if (cmdstr !== undefined && !bypass) {
+    addedIndex = this._state.requests.push(
       {
         prefix: null,
         command: cmdstr,
         cmddata: cmddata,
         callback: cb,
         dispatch: dispatchFunc,
+        sent: false,
         args: []
-      });
+      }) - 1;
+  }
   // If we are currently transitioning to/from idle, then wait around for the
   // server's response before doing anything more.
   if (this._state.ext.idle.state === IDLE_WAIT ||
       this._state.ext.idle.state === DONE_WAIT)
     return;
-  // only do something if this was 1) an attempt to kick us to run the next
-  // command, 2) the first/only command (none are pending), or 3) a bypass.
+  // only do something if this was one of:
+  // 1) an attempt to kick us to run the next command
+  // 2) the first/only command (none are pending)
+  // 3) a pipelineable command and the previous command was already sent
+  // 4) a bypass.
+  var request = null;
+      // #1: kick us to run the next command
   if ((cmdstr === undefined && this._state.requests.length) ||
-      this._state.requests.length === 1 || bypass) {
-    var prefix = '', cmd = (bypass ? cmdstr : this._state.requests[0].command),
-        data = (bypass ? null : this._state.requests[0].cmddata),
-        dispatch = (bypass ? null : this._state.requests[0].dispatch);
+      // #2 the first/only command
+      addedIndex === 0) {
+    request = this._state.requests[0];
+    // If we already sent this request because of pipelining, then don't
+    // re-send it and just wait for it to be retired when its results come in.
+    if (request.sent)
+      request = null;
+  }
+           // #3: pipelineable, last thing sent already!
+  else if (RE_CAN_PIPELINE_CMD.test(cmdstr) &&
+           this._state.requests[addedIndex - 1].sent) {
+    request = this._state.requests[addedIndex];
+  }
+  // (#1 #2 #3 || #4: bypass)
+  if (request || bypass) {
+    var prefix = '',
+        cmd = (bypass ? cmdstr : request.command),
+        data = (bypass ? null : request.cmddata),
+        dispatch = (bypass ? null : request.dispatch);
     clearTimeout(this._state.tmrKeepalive);
     // If we are currently in IDLE, we need to exit it before we send the
     // actual command.  We mark it as a bypass so it does't mess with the
@@ -1386,8 +1411,8 @@ ImapConnection.prototype._send = function(cmdstr, cmddata, cb, dispatchFunc,
     }
     if (cmd !== 'IDLE' && cmd !== 'DONE') {
       prefix = 'A' + ++this._state.curId + ' ';
-      if (!bypass)
-        this._state.requests[0].prefix = prefix;
+      if (request)
+        request.prefix = prefix;
     }
 
     if (dispatch)
@@ -1433,6 +1458,8 @@ ImapConnection.prototype._send = function(cmdstr, cmddata, cb, dispatchFunc,
       gSendBuf[iWrite++] = 10;
       this._state.conn.send(gSendBuf.subarray(0, iWrite));
     }
+    if (request)
+      request.sent = true;
 
     if (this._LOG) { if (!bypass) this._LOG.cmd_begin(prefix, cmd, /^LOGIN$/.test(cmd) ? '***BLEEPING OUT LOGON***' : data); else this._LOG.bypassCmd(prefix, cmd);}
 
