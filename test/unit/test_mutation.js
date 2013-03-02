@@ -502,7 +502,7 @@ TD.commonCase('move/trash messages', function(T) {
   // we should be safe.
   var sourceFolder = testAccount.do_createTestFolder(
     'test_move_source',
-    { count: 5, age: { days: 10 }, age_incr: { days: 1 } });
+    { count: 5, age: { days: 1 }, age_incr: { hours: 1 } });
   var targetFolder = testAccount.do_createTestFolder(
     'test_move_target',
     { count: 0 });
@@ -707,7 +707,7 @@ TD.commonCase('batch move/trash messages', function(T) {
 
   var sourceFolder = testAccount.do_createTestFolder(
     'test_move_source',
-    { count: 10, age_incr: { days: 1 } });
+    { count: 10, age_incr: { hours: 1 } });
   var targetFolder = testAccount.do_createTestFolder(
     'test_move_target',
     { count: 0 });
