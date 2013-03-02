@@ -733,14 +733,20 @@ TD.commonCase('batch move/trash messages', function(T) {
     'sourceView', sourceFolder,
     { count: 10, full: 10, flags: 0, deleted: 0,
       filterType: FilterType.NoFilter },
-    { top: true, bottom: true, grow: false });
+    { top: true, bottom: true, grow: false },
+    { syncedToDawnOfTime: true });
   var targetView = testAccount.do_openFolderView(
     'targetView', targetFolder,
     { count: 0, full: 0, flags: 0, deleted: 0,
       filterType: FilterType.NoFilter },
-    { top: true, bottom: true, grow: false });
+    { top: true, bottom: true, grow: false },
+    { syncedToDawnOfTime: true });
   // open the trash but don't care what's in there, we just care about deltas
-  var trashView = testAccount.do_openFolderView('trashView', trashFolder, null);
+  var trashView = testAccount.do_openFolderView(
+    'trashView', trashFolder,
+    null,
+    null,
+    { syncedToDawnOfTime: 'ignore' });
 
   T.group('offline manipulation; released to server');
 
