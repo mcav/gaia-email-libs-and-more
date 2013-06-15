@@ -349,8 +349,19 @@ function MailUniverse(callAfterBigBang, testOptions) {
   var self = this;
   this._db.getConfig(function(configObj, accountInfos, lazyCarryover) {
     function setupLogging(config) {
+      // XXX LOOKATME XXX LOOKATME! I AM HARDCODING LOGGING HERE
+      // I AM ONLY TO BE USED IN DEBUG-ONLY BUILDS PROVIDED FOR A SPECIAL
+      // PURPOSE
+      self.config.debugLogging = 'realtime-dangerous';
       if (self.config.debugLogging) {
-        if (self.config.debugLogging !== 'dangerous') {
+        if (self.config.debugLogging === 'realtime-dangerous') {
+          console.warn('!!!');
+          console.warn('!!!!! REALTIME DANGEROUS LOGGING ENABLED !!!!!');
+          console.warn('!!!');
+          console.warn('You are about to see a lot of logs!');
+          $log.DEBUG_realtimeLogEverything(dump);
+        }
+        else if (self.config.debugLogging !== 'dangerous') {
           console.warn('GENERAL LOGGING ENABLED!');
           console.warn('(CIRCULAR EVENT LOGGING WITH NON-SENSITIVE DATA)');
           $log.enableGeneralLogging();

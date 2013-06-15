@@ -1758,6 +1758,29 @@ exports.DEBUG_markAllFabsUnderTest = function() {
 };
 
 /**
+ * All log output gets passed to the dumpFunc as it happens.  dumpFunc should
+ * resemble the standard mozilla dump() func wherein we must provide newlines.
+ */
+exports.DEBUG_realtimeLogEverything = function(dumpFunc) {
+  var EverythingTester = {
+    reportNewLogger: function(logger, parentLogger) {
+      logger._actor = {
+        __loggerFired: function() {
+          var entry = logger._entries[logger._entries.length - 1];
+          dumpFunc(JSON.stringify(entry) + '\n');
+        }
+      }
+    }
+  };
+  UNDER_TEST_DEFAULT = EverythingTester;
+  for (var i = 0; i < ALL_KNOWN_FABS.length; i++) {
+    var logfab = ALL_KNOWN_FABS[i];
+
+    logfab._underTest = EverythingTester;
+  }
+};
+
+/**
  * Evolutionary stopgap debugging helper to be able to put a module/logfab into
  *  a mode of operation where it dumps all of its loggers' entries to
  *  console.log when they die.
