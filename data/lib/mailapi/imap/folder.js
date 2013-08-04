@@ -1,3 +1,6 @@
+/**
+ * @module mailapi/imap/folder
+ **/
 define(
   [
     'rdcommon/log',
@@ -94,7 +97,7 @@ var MAX_FETCH_BYTES = (Math.pow(2, 32) - 1);
  * synchronization.  Storage is handled by `FolderStorage` instances.  All of
  * the connection life-cycle nitty-gritty is handled by the `ImapAccount`.
  *
- * == Progress
+ * ## Progress
  *
  * Our progress break-down is:
  * - [0.0, 0.1]: Getting the IMAP connection.
@@ -108,7 +111,7 @@ var MAX_FETCH_BYTES = (Math.pow(2, 32) - 1);
  *   - New headers: 20 + 5 * number of new headers
  *   - Bodies: 30 * number of new headers
  *
- * == IDLE
+ * ## IDLE
  *
  * We plan to IDLE in folders that we have active slices in.  We are assuming
  * the most basic IDLE implementation where it will tell us when the number
@@ -120,6 +123,8 @@ var MAX_FETCH_BYTES = (Math.pow(2, 32) - 1);
  * The idea is accordingly that we will use IDLE notifications as a hint that
  * we should do a SEARCH for new messages.  It is that search that will update
  * our accuracy information and only that.
+ *
+ * @class ImapFolderConn
  */
 function ImapFolderConn(account, storage, _parentLog) {
   this._account = account;
@@ -852,6 +857,9 @@ console.log('BISECT CASE', serverUIDs.length, 'curDaysDelta', curDaysDelta);
   },
 };
 
+/**
+ * @class ImapFolderSyncer
+ */
 function ImapFolderSyncer(account, folderStorage, _parentLog) {
   this._account = account;
   this.folderStorage = folderStorage;

@@ -1,0 +1,13 @@
+{
+  "name": "gaia-email-libs-and-more",
+  "version": "0.1.0",
+  "description": "Gaia email client back-end libraries",
+
+  "dependencies": {
+  },
+
+  "devDependencies": {
+    "marked": "0.2.9",
+    "yuidocjs": "~0.3"
+  }
+}

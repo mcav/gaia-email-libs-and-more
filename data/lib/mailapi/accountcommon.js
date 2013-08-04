@@ -1,5 +1,7 @@
 /**
  * Common code for creating and working with various account types.
+ *
+ * @module mailapi/accountcommon
  **/
 
 define(
@@ -206,6 +208,8 @@ exports.recreateIdentities = recreateIdentities;
  *     server: 'https://<activesync hostname>'
  *   },
  * }
+ *
+ * @class Autoconfigurator
  */
 function Autoconfigurator(_LOG) {
   this._LOG = _LOG;

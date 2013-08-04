@@ -1,4 +1,6 @@
 /data/deps/
+/docs/
+/node_modules/
 /node-transformed-deps/
 /jetpack-tcp-imap-demo.xpi
 /gaia-email-opt.js

@@ -1,5 +1,6 @@
 /**
- *
+ * @module mailapi/accountmixins
+ * @class AccountMixins
  **/
 
 define(
@@ -11,34 +12,17 @@ define(
   ) {
 
 /**
- * @args[
- *   @param[op MailOp]
- *   @param[mode @oneof[
- *     @case['local_do']{
- *       Apply the mutation locally to our database rep.
- *     }
- *     @case['check']{
- *       Check if the manipulation has been performed on the server.  There
- *       is no need to perform a local check because there is no way our
- *       database can be inconsistent in its view of this.
- *     }
- *     @case['do']{
- *       Perform the manipulation on the server.
- *     }
- *     @case['local_undo']{
- *       Undo the mutation locally.
- *     }
- *     @case['undo']{
- *       Undo the mutation on the server.
- *     }
- *   ]]
- *   @param[callback @func[
- *     @args[
- *       @param[error @oneof[String null]]
- *     ]
- *   ]]
- *   }
- * ]
+ * @method runOp
+ * @param op {MailOp}
+ * @param mode {'local_do'|'check'|'do'|'local_undo'|'undo'}
+ *   - local_do: Apply the mutation locally to our database rep.
+ *   - check: Check if the manipulation has been performed on the server.  There
+ *       is no need to perform a local check because there is no way our database
+ *       can be inconsistent in its view of this.
+ *   - do: Perform the manipulation on the server.
+ *   - local_undo: Undo the mutation locally.
+ *   - undo: Undo the mutation on the server.
+ * @param callback {Function(error)}
  */
 exports.runOp = function runOp(op, mode, callback) {
   console.log('runOp(' + mode + ': ' + JSON.stringify(op).substring(0, 160) +
@@ -75,6 +59,9 @@ exports.runOp = function runOp(op, mode, callback) {
 /**
  * Return the folder metadata for the first folder with the given type, or null
  * if no such folder exists.
+ *
+ * @method getFirstFolderWithType
+ * @param type {FolderType}
  */
 exports.getFirstFolderWithType = function(type) {
   var folders = this.folders;
@@ -84,6 +71,10 @@ exports.getFirstFolderWithType = function(type) {
   }
  return null;
 };
+/**
+ * @method getFolderByPath
+ * @param folderPath {String}
+ */
 exports.getFolderByPath = function(folderPath) {
   var folders = this.folders;
   for (var iFolder = 0; iFolder < folders.length; iFolder++) {

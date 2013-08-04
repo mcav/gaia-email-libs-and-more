@@ -1,0 +1,10 @@
+{
+  "name": "gaia-email-libs-and-more",
+  "description": "The Gaia email client back-end",
+  "version": "0.1",
+  "url": "https://github.com/mozilla-b2g/gaia-email-libs-and-more",
+  "options": {
+    "linkNatives": true,
+    "exclude": "q.js"
+  }
+}

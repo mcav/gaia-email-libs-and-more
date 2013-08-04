@@ -10,6 +10,11 @@ help:
 	@echo "make install-into-gaia"
 	@echo "  Clean, build and copy tests into gaia"
 	@echo ""
+	@echo "## DOCS ##"
+	@echo ""
+	@echo "make docs"
+	@echo "  Build documentation targets in docs/ from docsrc/"
+	@echo ""
 	@echo "## FAKE SERVERS (for use by you, not for testing) ##"
 	@echo ""
 	@echo "make imap-server"
@@ -71,6 +76,14 @@ build: $(DEP_NODE_PKGS) $(OUR_JS_DEPS)
 
 gaia-symlink:
 	echo "You need to create a symlink 'gaia-symlink' pointing at the gaia dir"
+
+YUIDOC := ./node_modules/.bin/yuidoc
+# run yuidoc at the root of the tree we want to document because it has the
+# annoying habit of recursing into every subdirectory and through every symlink
+# it encounters, even when you explicitly tell it to stay out with -x.
+.PHONY: docs
+docs:
+	cd data/lib; ../../$(YUIDOC) -o ../../docs/api -c ../../tools/docs/yuidoc.json .
 
 B2GBD := b2g-builddir-symlink
 ifeq ($(wildcard b2g-bindir-symlink),)

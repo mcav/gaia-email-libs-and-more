@@ -1,5 +1,5 @@
 /**
- *
+ * @module mailapi/imap/account
  **/
 
 define(
@@ -47,6 +47,8 @@ function cmpFolderPubPath(a, b) {
  * we would like them to be stored in some type of keyring coupled to the TCP
  * API in such a way that we never know the API.  Se a vida e.
  *
+ * @class ImapAccount
+ * @uses AccountMixins
  */
 function ImapAccount(universe, compositeAccount, accountId, credentials,
                      connInfo, folderInfos,

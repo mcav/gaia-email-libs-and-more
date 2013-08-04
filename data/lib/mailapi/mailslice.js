@@ -1,7 +1,7 @@
 /**
  * Presents a message-centric view of a slice of time from IMAP search results.
  *
- * == Use-case assumptions
+ * ## Use-case assumptions
  *
  * - We are backing a UI showing a list of time-ordered messages.  This can be
  *   the contents of a folder, on-server search results, or the
@@ -20,7 +20,7 @@
  * - We want mutations made locally to appear as if they are applied
  *   immediately, even if we are operating offline.
  *
- * == Efficiency desires
+ * ## Efficiency desires
  *
  * - Avoid redundant network traffic by caching our results using IndexedDB.
  * - Keep the I/O burden and overhead low from caching/sync.  We know our
@@ -34,7 +34,7 @@
  *   (If we were using LevelDB, large writes would probably be less
  *   desirable.)
  *
- * == Of slices, folders, and gmail
+ * ## Of slices, folders, and gmail
  *
  * It would be silly for a slice that is for browsing the folder unfiltered and
  * a slice that is a result of a search to act as if they were dealing with
@@ -42,12 +42,13 @@
  * a message that we know is the same message across multiple (labels as)
  * folders.  So we abstract away the storage details to `FolderStorage`.
  *
- * == Latency, offline access, and IMAP
+ * ## Latency, offline access, and IMAP
  *
  * The fundamental trade-off is between delaying showing things in the UI and
  * showing them and then having a bunch of stuff happen a split-second later.
  * (Messages appearing, disappearing, having their status change, etc.)
  *
+ * @module mailapi/mailslice
  **/
 
 define(
@@ -147,7 +148,7 @@ var SYNC_START_MINIMUM_PROGRESS = 0.02;
 /**
  * Book-keeping and limited agency for the slices.
  *
- * === Batching ===
+ * ## Batching ##
  *
  * We do a few different types of batching based on the current sync state,
  * with these choices being motivated by UX desires and some efficiency desires
@@ -171,6 +172,8 @@ var SYNC_START_MINIMUM_PROGRESS = 0.02;
  *   by unit tests) for this is that we want all the changes coherently and with
  *   limits made effective.  To this end, we do not generate any splices until
  *   sync is complete and then generate a single slice.
+ *
+ * @class MailSlice
  */
 function MailSlice(bridgeHandle, storage, _parentLog) {
   this._bridgeHandle = bridgeHandle;
@@ -190,12 +193,16 @@ function MailSlice(bridgeHandle, storage, _parentLog) {
    * A string value for hypothetical debugging purposes, but which is coerced
    * to a Boolean value for some of our slice notifications as both the
    * userRequested/moreExpected values, although they aren't super important.
+   *
+   * @property waitingOnData
    */
   this.waitingOnData = false;
 
   /**
    * When true, we are not generating splices and are just accumulating state
    * in this.headers.
+   *
+   * @property _accumulating
    */
   this._accumulating = false;
   /**
@@ -204,11 +211,14 @@ function MailSlice(bridgeHandle, storage, _parentLog) {
    * then the slice is populated from the database.  After this initial sync,
    * ignoreHeaders is set to false so that updates and (hopefully small
    * numbers of) additions/removals can be observed.
+   *
+   * @property ignoreHeaders
    */
   this.ignoreHeaders = false;
 
   /**
-   * @listof[HeaderInfo]
+   * @property headers
+   * @type HeaderInfo[]
    */
   this.headers = [];
   this.desiredHeaders = $sync.INITIAL_FILL_SIZE;
@@ -255,6 +265,8 @@ MailSlice.prototype = {
 
   /**
    * Reset the state of the slice, clearing out any known headers.
+   *
+   * @method reset
    */
   reset: function() {
     if (!this._bridgeHandle)
@@ -276,6 +288,8 @@ MailSlice.prototype = {
 
   /**
    * Force an update of our current date range.
+   *
+   * @method refresh
    */
   refresh: function() {
     this._storage.refreshSlice(this);
@@ -391,6 +405,8 @@ MailSlice.prototype = {
   /**
    * Update our sync progress with a value in the range [0.0, 1.0].  We leave
    * it up to the specific protocol to determine how it maps values.
+   *
+   * @method setSyncProgress
    */
   setSyncProgress: function(value) {
     if (!this._bridgeHandle)
@@ -399,18 +415,12 @@ MailSlice.prototype = {
   },
 
   /**
-   * @args[
-   *   @param[headers @listof[MailHeader]]
-   *   @param[insertAt @oneof[
-   *     @case[-1]{
-   *       Append to the end of the list
-   *     }
-   *     @case[Number]{
-   *       Insert the headers at the given index.
-   *     }
-   *   ]]
-   *   @param[moreComing Boolean]
-   * ]
+   * @method batchAppendHeaders
+   * @param headers {MailHeader[]}
+   * @param insertAt {-1|Number}
+   *   If -1, append to the end of the list.  Otherwise, the index to insert the
+   *   headers at.
+   * @param moreComing {Boolean}
    */
   batchAppendHeaders: function(headers, insertAt, moreComing) {
     if (!this._bridgeHandle)
@@ -455,6 +465,8 @@ MailSlice.prototype = {
    * be unconditionally called by a sync populating this slice, or conditionally
    * called when the header is in the time-range of interest and a refresh,
    * cron-triggered sync, or IDLE/push tells us to do so.
+   *
+   * @method onHeaderAdded
    */
   onHeaderAdded: function(header, syncDriven, messageIsNew) {
     if (!this._bridgeHandle)
@@ -508,6 +520,8 @@ MailSlice.prototype = {
   /**
    * Tells the slice that a header it should know about has changed.  (If
    * this is a search, it's okay for it not to know...)
+   *
+   * @method onHeaderModified
    */
   onHeaderModified: function(header) {
     if (!this._bridgeHandle)
@@ -527,6 +541,8 @@ MailSlice.prototype = {
 
   /**
    * Tells the slice that a header it should know about has been removed.
+   *
+   * @method onHeaderRemoved
    */
   onHeaderRemoved: function(header) {
     if (!this._bridgeHandle)
@@ -900,6 +916,8 @@ MailSlice.prototype = {
  *     @value[BodyInfo]
  *   ]]
  * ]]
+ *
+ * @class FolderStorage
  */
 function FolderStorage(account, folderId, persistedFolderInfo, dbConn,
                        FolderSyncer, _parentLog) {
@@ -914,27 +932,30 @@ function FolderStorage(account, folderId, persistedFolderInfo, dbConn,
   this._LOG = LOGFAB.FolderStorage(this, _parentLog, folderId);
 
   /**
-   * @listof[AccuracyRangeInfo]{
-   *   Newest-to-oldest sorted list of accuracy range info structures that are
-   *   keyed by their IMAP-consistent startTS (inclusive) and endTS (exclusive)
-   *   on a per-day granularity.
-   * }
+   * Newest-to-oldest sorted list of accuracy range info structures that are
+   * keyed by their IMAP-consistent startTS (inclusive) and endTS (exclusive) on
+   * a per-day granularity.
+   *
+   * @property _accuracyRanges
+   * @type AccuracyRangeInfo[]
    */
   this._accuracyRanges = persistedFolderInfo.accuracy;
   /**
-   * @listof[FolderBlockInfo]{
-   *   Newest-to-oldest (numerically decreasing time and ID) sorted list of
-   *   header folder block infos.  They are keyed by a composite key consisting
-   *   of messages' "date" and "id" fields.
-   * }
+   * Newest-to-oldest (numerically decreasing time and ID) sorted list of header
+   * folder block infos.  They are keyed by a composite key consisting of
+   * messages' "date" and "id" fields.
+   *
+   * @property _headerBlockInfos
+   * @type FolderBlockInfo[]
    */
   this._headerBlockInfos = persistedFolderInfo.headerBlocks;
   /**
-   * @listof[FolderBlockInfo]{
-   *   Newest-to-oldest (numerically decreasing time and ID) sorted list of
-   *   body folder block infos.  They are keyed by a composite key consisting
-   *   of messages' "date" and "id" fields.
-   * }
+   * Newest-to-oldest (numerically decreasing time and ID) sorted list of body
+   * folder block infos.  They are keyed by a composite key consisting of
+   * messages' "date" and "id" fields.
+   *
+   * @property _bodyBlockInfos
+   * @type FolderBlockInfo[]
    */
   this._bodyBlockInfos = persistedFolderInfo.bodyBlocks;
 
@@ -994,6 +1015,9 @@ function FolderStorage(account, folderId, persistedFolderInfo, dbConn,
 
   /**
    * Has our internal state altered at all and will need to be persisted?
+   *
+   * @property _dirty
+   * @type Boolean
    */
   this._dirty = false;
   /** @dictof[@key[BlockId] @value[HeaderBlock]] */
@@ -1002,14 +1026,13 @@ function FolderStorage(account, folderId, persistedFolderInfo, dbConn,
   this._dirtyBodyBlocks = {};
 
   /**
-   * @listof[AggrBlockId]
+   * @property _pendingLoads
+   * @type AggrBlockId[]
    */
   this._pendingLoads = [];
   /**
-   * @dictof[
-   *   @key[AggrBlockId]
-   *   @key[@listof[@func]]
-   * ]
+   * @property _pendingLoadListeners
+   * @type AggrBlockId->Function[]
    */
   this._pendingLoadListeners = {};
 
@@ -1061,13 +1084,15 @@ FolderStorage.prototype = {
 
   /**
    * Function that we call with header whenever addMessageHeader gets called.
-   * @type {Function}
+   * @type Function
    * @private
    */
   _onAddingHeader: null,
 
   /**
    * Reset all active slices.
+   *
+   * @method resetAndRefreshActiveSlices
    */
   resetAndRefreshActiveSlices: function() {
     if (!this._slices.length)
@@ -1090,6 +1115,8 @@ FolderStorage.prototype = {
    * We trigger a cache flush after clearing the set of dirty blocks because
    * this is the first time we can flush the no-longer-dirty blocks and this is
    * an acceptable/good time to clear the cache since we must not be in a mutex.
+   *
+   * @method generatePersistenceInfo
    */
   generatePersistenceInfo: function() {
     if (!this._dirty)
@@ -1161,16 +1188,14 @@ FolderStorage.prototype = {
    * back, then you would want to do all of that with the mutex held; reading
    * the header before holding the mutex could result in a race.
    *
-   * @args[
-   *   @param[name String]{
-   *     A short name to identify what operation this is for debugging purposes.
-   *     No private user data or sensitive data should be included in the name.
-   *   }
-   *   @param[func @func[@args[@param[callWhenDone Function]]]]{
-   *     The function to run with (notional) exclusive access to the
-   *     FolderStorage.
-   *   }
-   * ]
+   * @method runMutexed
+   * @param name {String}
+   *   A short name to identify what operation this is for debugging purposes.
+   *   No private user data or sensitive data should be included in the name.
+   * @param func {Function(callWhenDone)}
+   *   The function to run with (notional) exclusive access to the
+   *   FolderStorage.  The function will receive a single argument which is the
+   *   function to call when it is done.
    */
   runMutexed: function(name, func) {
     var doRun = this._mutexQueue.length === 0;
@@ -1188,6 +1213,9 @@ FolderStorage.prototype = {
    * Create an empty header `FolderBlockInfo` and matching `HeaderBlock`.  The
    * `HeaderBlock` will be inserted into the block map, but it's up to the
    * caller to insert the returned `FolderBlockInfo` in the right place.
+   *
+   * @method _makeHeaderBlock
+   * @private
    */
   _makeHeaderBlock: function ifs__makeHeaderBlock(
       startTS, startUID, endTS, endUID, estSize, ids, headers) {
@@ -1264,6 +1292,9 @@ FolderStorage.prototype = {
    * be created and returned.  The newer block is filled with data until it
    * first overflows newerTargetBytes.  This method is responsible for updating
    * the actual containing blocks as well.
+   *
+   * @method _splitHeaderBlock
+   * @private
    */
   _splitHeaderBlock: function ifs__splitHeaderBlock(splinfo, splock,
                                                     newerTargetBytes) {
@@ -1302,6 +1333,9 @@ FolderStorage.prototype = {
    * Create an empty header `FolderBlockInfo` and matching `BodyBlock`.  The
    * `BodyBlock` will be inserted into the block map, but it's up to the
    * caller to insert the returned `FolderBlockInfo` in the right place.
+   *
+   * @method _makeBodyBlock
+   * @private
    */
   _makeBodyBlock: function ifs__makeBodyBlock(
       startTS, startUID, endTS, endUID, size, ids, bodies) {
@@ -1387,6 +1421,9 @@ FolderStorage.prototype = {
    * be created and returned.  The newer block is filled with data until it
    * first overflows newerTargetBytes.  This method is responsible for updating
    * the actual containing blocks as well.
+   *
+   * @method _splitBodyBlock
+   * @private
    */
   _splitBodyBlock: function ifs__splitBodyBlock(splinfo, splock,
                                                 newerTargetBytes) {
@@ -1449,6 +1486,8 @@ FolderStorage.prototype = {
    * lead to a near-perfect hit rate on immediate actions and the UI's
    * pre-emptive slice growing should insulate it from any foolish discards
    * we might make.
+   *
+   * @method flushExcessCachedBlocks
    */
   flushExcessCachedBlocks: function(debugLabel) {
     var slices = this._slices;
@@ -1544,16 +1583,8 @@ FolderStorage.prototype = {
    * - We do not currently take the size of downloaded embedded images into
    *   account
    *
-   * @args[
-   *   @param[callback @func[
-   *     @args[
-   *       @param[numDeleted Number]{
-   *         The number of messages deleted.
-   *       }
-   *       @param[cutTS DateMS]
-   *     ]
-   *   ]]
-   * ]
+   * @method purgeExcessMessages
+   * @param callback {Function(numDeleted)}
    */
   purgeExcessMessages: function(callback) {
     this._messagePurgeScheduled = false;
@@ -1678,13 +1709,14 @@ FolderStorage.prototype = {
    * the provided date.  For use to find the right index in `_accuracyRanges`,
    * `_headerBlockInfos`, and `_bodyBlockInfos`, all of which are pre-sorted.
    *
-   * @return[@list[
-   *   @param[index Number]{
-   *     The index of the Object that contains the date, or if there is no such
+   * @private
+   * @method _findRangeObjIndexForDate
+   * @return {[index, insider]}
+   *   Returns a tuple of:
+   *   - the index of the Object that contains the date, or if there is no such
    *     structure, the index that it should be inserted at.
-   *   }
-   *   @param[inside Object]
-   * ]]
+   *   - the containing object instance, possibly null
+   *
    */
   _findRangeObjIndexForDate: function ifs__findRangeObjIndexForDate(
       list, date) {
@@ -1836,7 +1868,7 @@ FolderStorage.prototype = {
    * This is an asynchronous operation because we potentially need to load
    * blocks from disk.
    *
-   * == Usage patterns
+   * ## Usage patterns
    *
    * - In initial-sync cases and scrolling down through the list, we will
    *   generate messages from a younger-to-older direction.  The insertion point
@@ -1858,7 +1890,7 @@ FolderStorage.prototype = {
    *   case we will want to traverse from the startTS messages, dropping them and
    *   consolidating blocks as we go until we have freed up enough space.
    *
-   * == General strategy
+   * ## General strategy
    *
    * - If we fall in an existing block and it won't overflow, use it.
    * - If we fall in an existing block and it would overflow, split it.
@@ -1873,33 +1905,26 @@ FolderStorage.prototype = {
    *   additions without further splits.
    * - When splitting, otherwise, split equally-ish.
    *
-   * == Block I/O
+   * ## Block I/O
    *
    * While we can make decisions about where to insert things, we need to have
    * blocks in memory in order to perform the actual splits.  The outcome
    * of splits can't be predicted because the size of things in blocks is
    * only known when the block is loaded.
    *
-   * @args[
-   *   @param[type @oneof['header' 'body']]
-   *   @param[date DateMS]
-   *   @param[estSizeCost Number]{
-   *     The rough byte cost of whatever we want to stick in a block.
-   *   }
-   *   @param[thing Object]
-   *   @param[blockPickedCallback @func[
-   *     @args[
-   *       @param[blockInfo FolderBlockInfo]
-   *       @param[block @oneof[HeaderBlock BodyBlock]]
-   *     ]
-   *   ]]{
-   *     Callback function to invoke once we have found/created/made-room-for
-   *     the thing in the block.  This needs to be a callback because if we need
-   *     to perform any splits, we require that the block be loaded into memory
-   *     first.  (For consistency and simplicity, we then made us always return
-   *     the block.)
-   *   }
-   * ]
+   * @private
+   * @method _insertIntoBlockUsingDateAndUID
+   * @param type {'header'|'body'}
+   * @param date {DateMS}
+   * @param estSizeCost {Number}
+   *   The rough byte cost of whatever we want to stick in a block.
+   * @param thing {Object}
+   * @param blockPickedCallback {Function(blockInfo, block)}
+   *    Callback function to invoke once we have found/created/made-room-for
+   *    the thing in the block.  This needs to be a callback because if we need
+   *    to perform any splits, we require that the block be loaded into memory
+   *    first.  (For consistency and simplicity, we then made us always return
+   *    the block.)
    */
   _insertIntoBlockUsingDateAndUID: function ifs__pickInsertionBlocks(
       type, date, uid, srvid, estSizeCost, thing, blockPickedCallback) {
@@ -2097,6 +2122,8 @@ FolderStorage.prototype = {
   /**
    * Request the load of the given block and the invocation of the callback with
    * the block when the load completes.
+   *
+   * @method _loadBlock
    */
   _loadBlock: function ifs__loadBlock(type, blockInfo, callback) {
     var blockId = blockInfo.blockId;
@@ -2226,13 +2253,12 @@ FolderStorage.prototype = {
    * heuristics.  Our new approach is much better from a latency perspective but
    * may result in UI complications since we can be so far behind 'now'.
    *
-   * @args[
-   *   @param[forceRefresh #:optional Boolean]{
-   *     Should we ensure that we try and perform a refresh if we are online?
-   *     Without this flag, we may decide not to attempt to trigger a refresh
-   *     if our data is sufficiently recent.
-   *   }
-   * ]
+   * @method sliceOpenMostRecent
+   * @param slice {MailSlice}
+   * @param [forceRefresh] {Boolean}
+   *   Should we ensure that we try and perform a refresh if we are online?
+   *   Without this flag, we may decide not to attempt to trigger a refresh
+   *   if our data is sufficiently recent.
    */
   sliceOpenMostRecent: function fs_sliceOpenMostRecent(slice, forceRefresh) {
     // Set the status immediately so that the UI will convey that the request is
@@ -2376,6 +2402,11 @@ FolderStorage.prototype = {
    *   process likes to keep going until it hits a message, and that's when
    *   it would commit its sync process, so the accuracy range is unlikely
    *   to buy us anything additional at the current time.
+   *
+   * @method growSlice
+   * @param slice {MailSlice}
+   * @param dirMagnitude {Number}
+   * @param userRequestsGrowth {Boolean}
    */
   growSlice: function ifs_growSlice(slice, dirMagnitude, userRequestsGrowth) {
     // If the user requested synchronization, provide UI feedback immediately,
@@ -2622,6 +2653,9 @@ FolderStorage.prototype = {
    * A notification from a slice that it is has reduced the span of time that it
    * covers.  We use this to run a cache eviction if there is not currently a
    * mutex held.
+   *
+   * @method sliceShrunk
+   * @param slice {MailSlice}
    */
   sliceShrunk: function fs_sliceShrunk(slice) {
     if (this._mutexQueue.length === 0)
@@ -2640,6 +2674,9 @@ FolderStorage.prototype = {
    * scanned for messages all the way back to 1990 then we will query all the
    * way back to 1990.  And if we have no messages in the slice, then we use the
    * full date bounds.
+   *
+   * @method refreshSlice
+   * @param slice {MailSlice}
    */
   refreshSlice: function fs_refreshSlice(slice) {
     // Set the status immediately so that the UI will convey that the request is
@@ -2796,6 +2833,8 @@ FolderStorage.prototype = {
 
   /**
    * Receive messages directly from the database (streaming).
+   *
+   * @method onFetchDBHeaders
    */
   onFetchDBHeaders: function(slice, triggerRefresh, doneCallback, releaseMutex,
                              headers, moreMessagesComing) {
@@ -2844,6 +2883,10 @@ FolderStorage.prototype = {
    * this folder as part of our fully-synchronized time-span.  Messages known
    * because of sparse searches do not count.  If null/null is passed and there
    * are no known headers, we will return true.
+   *
+   * @method headerIsYoungestKnown
+   * @param date {Number}
+   * @param uid
    */
   headerIsYoungestKnown: function(date, uid) {
     // NB: unlike oldest known, this should not actually be impacted by messages
@@ -2972,30 +3015,20 @@ FolderStorage.prototype = {
    * `getMessagesAfterMessage` to perform iteration relative to a known
    * message.
    *
-   * @args[
-   *   @param[startTS DateMS]{
-   *     SINCE-evaluated start timestamp (inclusive).
-   *   }
-   *   @param[endTS DateMS]{
-   *     BEFORE-evaluated end timestamp (exclusive).  If endTS is null, get all
-   *     messages since startTS.
-   *   }
-   *   @param[minDesired #:optional Number]{
-   *     The minimum number of messages to return.  We will keep loading blocks
-   *     from disk until this limit is reached.
-   *   }
-   *   @param[maxDesired #:optional Number]{
-   *     The maximum number of messages to return.  If there are extra messages
-   *     available in a header block after satisfying `minDesired`, we will
-   *     return them up to this limit.
-   *   }
-   *   @param[messageCallback @func[
-   *     @args[
-   *       @param[headers @listof[HeaderInfo]]
-   *       @param[moreMessagesComing Boolean]]
-   *     ]
-   *   ]
-   * ]
+   * @method getMessagesInImapDateRange
+   * @param startTS {Number}
+   *   SINCE-evaluated start timestamp (inclusive).
+   * @param endTS {Number}
+   *   BEFORE-evaluated end timestamp (exclusive).  If endTS is null, get all
+   *   messages since startTS.
+   * @param [minDesired] {Number}
+   *   The minimum number of messages to return.  We will keep loading blocks
+   *   from disk until this limit is reached.
+   * @param [maxDesired] {Number}
+   *   The maximum number of messages to return.  If there are extra messages
+   *   available in a header block after satisfying `minDesired`, we will
+   *   return them up to this limit.
+   * @param messageCallback {Function(headers, moreMessagesComing)}
    */
   getMessagesInImapDateRange: function ifs_getMessagesInDateRange(
       startTS, endTS, minDesired, maxDesired, messageCallback) {
@@ -3081,13 +3114,8 @@ FolderStorage.prototype = {
    * Batch/non-streaming version of `getMessagesInDateRange` using an IMAP
    * style date-range for syncing.
    *
-   * @args[
-   *   @param[allCallback @func[
-   *     @args[
-   *       @param[headers @listof[HeaderInfo]]
-   *     ]
-   *   ]
-   * ]
+   * @method getAllMessagesInImapDateRange
+   * @param allCallback {Function(headers)}
    */
   getAllMessagesInImapDateRange: function ifs_getAllMessagesInDateRange(
       startTS, endTS, allCallback) {
@@ -3109,6 +3137,8 @@ FolderStorage.prototype = {
    *
    * If date/id are null, it as if the date/id of the most recent message
    * are passed.
+   *
+   * @method getMessagesBeforeMessage
    */
   getMessagesBeforeMessage: function(date, id, limit, messageCallback) {
     var toFill = (limit != null) ? limit : $sync.TOO_MANY_MESSAGES, self = this;
@@ -3194,6 +3224,8 @@ FolderStorage.prototype = {
   /**
    * Fetch up to `limit` messages chronologically after the given message (in
    * the direction of 'end').
+   *
+   * @method getMessagesAfterMessage
    */
   getMessagesAfterMessage: function(date, id, limit, messageCallback) {
     var toFill = (limit != null) ? limit : $sync.TOO_MANY_MESSAGES, self = this;
@@ -3283,12 +3315,11 @@ FolderStorage.prototype = {
    * up shifted by a day when quantized, which is distinctly not what we want to
    * happen.
    *
-   * @args[
-   *   @param[startTS DateMS]
-   *   @param[endTS DateMS]
-   *   @param[modseq]
-   *   @param[updated DateMS]
-   * ]
+   * @method markSyncRange
+   * @param startTS {Number}
+   * @param endTS {Number}
+   * @param modseq {Object|String}
+   * @param updated {Number}
    */
   markSyncRange: function(startTS, endTS, modseq, updated) {
     // If our range was marked open-ended, it's really accurate through now.
@@ -3400,6 +3431,8 @@ FolderStorage.prototype = {
    * with the rest of the folder.  However it is also a self-correcting
    * inference since it causes our refreshes to include that time range since we
    * believe it to be safely empty.
+   *
+   * @method markSyncedToDawnOfTime
    */
   markSyncedToDawnOfTime: function() {
     this._LOG.syncedToDawnOfTime();
@@ -3418,6 +3451,8 @@ FolderStorage.prototype = {
    * dropping it entirely.  It is assumed/required that a call to markSyncRange
    * will follow this call within the same transaction, so the key thing is that
    * we lose the dawn-of-time bit without throwing away useful endTS values.
+   *
+   * @method clearSyncedToDawnOfTime
    */
   clearSyncedToDawnOfTime: function(newOldestTS) {
     var aranges = this._accuracyRanges;
@@ -3447,31 +3482,18 @@ FolderStorage.prototype = {
    * return Monday to Friday because 1 range can't capture Monday to Monday and
    * Friday to Friday at the same time.
    *
-   * @args[
-   *   @param[startTS DateMS]{
-   *     Inclusive range start.
-   *   }
-   *   @param[endTS DateMS]{
-   *     Exclusive range start; consistent with accuracy range rep.
-   *   }
-   *   @param[threshMS Number]{
-   *     The number of milliseconds to use as the threshold value for
-   *     determining if a time-range is recent enough.
-   *   }
-   * ]
-   * @return[@oneof[
-   *   @case[null]{
-   *     Everything is sufficiently up-to-date.  No refresh required.
-   *   }
-   *   @case[@dict[
-   *     @key[startTS DateMS]{
-   *       Inclusive start date.
-   *     }
-   *     @key[endTS DateMS]{
-   *       Exclusive end date.
-   *     }
-   *   ]]
-   * ]]
+   * @method checkAccuracyCoverageNeedingRefresh
+   * @param startTS {Number}
+   *   Inclusive range start.
+   * @param endTS {Number}
+   *   Exclusive range start; consistent with accuracy range rep.
+   * @param threshMS {Number}
+   *   The number of milliseconds to use as the threshold value for
+   *   determining if a time-range is recent enough.
+   * @return {one of}
+   *   - null: Everything is sufficiently up-to-date.  No refresh required.
+   *   - { startTS, endTS }: If everything is not up-to-date, the required
+   *     sync range.
    */
   checkAccuracyCoverageNeedingRefresh: function(startTS, endTS, threshMS) {
     var aranges = this._accuracyRanges, arange,
@@ -3520,15 +3542,21 @@ FolderStorage.prototype = {
    * Retrieve a full message (header/body) by suid & date. If either the body or
    * header is not present res will be null.
    *
-   *    folderStorage.getMessage(suid, date, function(res) {
-   *      if (!res) {
-   *        // don't do anything
-   *      }
+   *     folderStorage.getMessage(suid, date, function(res) {
+   *       if (!res) {
+   *         // don't do anything
+   *       }
    *
-   *      res.header;
-   *      res.body;
-   *    });
+   *       res.header;
+   *       res.body;
+   *     });
    *
+   * @method getMessage
+   * @param suid {SUID}
+   * @param date {Number}
+   * @param [options] {Object}
+   *   @param options.withBodyReps {Boolean}
+   * @param callback {Function}
    */
   getMessage: function(suid, date, options, callback) {
     if (typeof(options) === 'function') {
@@ -3570,6 +3598,11 @@ FolderStorage.prototype = {
   /**
    * Retrieve a message header by its SUID and date; you would do this if you
    * only had the SUID and date, like in a 'job'.
+   *
+   * @method getMessageHeader
+   * @param suid {SUID}
+   * @param date {Number}
+   * @param callback {Function}
    */
   getMessageHeader: function ifs_getMessageHeader(suid, date, callback) {
     var id = parseInt(suid.substring(suid.lastIndexOf('/') + 1)),
@@ -3616,6 +3649,10 @@ FolderStorage.prototype = {
 
   /**
    * Retrieve multiple message headers.
+   *
+   * @method getMessageHeaders
+   * @param namers {MessageNamer[]}
+   * @param callback {Function}
    */
   getMessageHeaders: function ifs_getMessageHeaders(namers, callback) {
     var pending = namers.length;
@@ -3638,6 +3675,10 @@ FolderStorage.prototype = {
 
   /**
    * Add a new message to the database, generating slice notifications.
+   *
+   * @method addMessageHeader
+   * @param header {HeaderInfo}
+   * @param callback {Function}
    */
   addMessageHeader: function ifs_addMessageHeader(header, callback) {
     if (this._pendingLoads.length) {
@@ -3709,12 +3750,29 @@ FolderStorage.prototype = {
    * notifications and dirtying its containing block to cause eventual database
    * writeback.
    *
-   * A message header gets updated ONLY because of a change in its flags.  We
-   * don't consider this change large enough to cause us to need to split a
-   * block.
-   *
    * This function can either be used to replace the header or to look it up
    * and then call a function to manipulate the header.
+   *
+   * Updating a header will not cause the header to change blocks because we
+   * currently assume that all headers are the same size.
+   *
+   * @method updateMessageHeader
+   * @param date {Number}
+   * @param id {ID}
+   * @param partOfSync {Boolean}
+   *   Suppresses change notifications for the slice currently undergoing
+   *   sync if true.  Used by ActiveSync, but XXX IT SEEMS WRONG.  Specifically,
+   *   the logic seems like a hold-over from a sync-then-fetch-messages idiom
+   *   and seems completely wrong in the refresh case.
+   * @param headerOrMutationFunc {Function(header)|HeaderInfo}
+   *   If a function, the function is called with the header in order to mutate
+   *   the header.  Or, you can just provide the new/updated header if you are
+   *   holding the (write) mutex on this folder so you are guaranteed no one
+   *   else will call this function with a different header, thereby clobbering
+   *   your changes.
+   * @param callback {Function}
+   *   Callback to invoke once the update has been completed.  (We may need
+   *   to wait on our own disk I/O
    */
   updateMessageHeader: function ifs_updateMessageHeader(date, id, partOfSync,
                                                         headerOrMutationFunc,
@@ -3795,7 +3853,16 @@ FolderStorage.prototype = {
   },
 
   /**
-   * Retrieve and update a header by locating it
+   * Retrieve and update a header by locating it using the server id.  (We don't
+   * know the id we allocated to it or the timestamp of the message in this
+   * case.)
+   *
+   * @method updateMessageHeaderByServerId
+   * @param srvid {ServerID}
+   * @param partOfSync {Boolean}
+   *   See `updateMessageHeader`
+   * @param headerOrMutationFunc
+   *   See `updateMessageHeader`
    */
   updateMessageHeaderByServerId: function(srvid, partOfSync,
                                           headerOrMutationFunc) {
@@ -3836,6 +3903,8 @@ FolderStorage.prototype = {
 
   /**
    * A notification that an existing header is still up-to-date.
+   *
+   * @method unchangedMessageHeader
    */
   unchangedMessageHeader: function ifs_unchangedMessageHeader(header) {
     if (this._pendingLoads.length) {
@@ -3908,6 +3977,9 @@ FolderStorage.prototype = {
    * message.  This requires that `serverIdHeaderBlockMapping` was enabled.
    * Currently, the mapping is a naive, always-in-memory (at least as long as
    * the FolderStorage is in memory) map.
+   *
+   * @method deleteMessageByServerId
+   * @param srvid {ServerID}
    */
   deleteMessageByServerId: function(srvid) {
     if (!this._serverIdHeaderBlockMapping)
@@ -3947,6 +4019,11 @@ FolderStorage.prototype = {
   /**
    * Add a message body to the system; you must provide the header associated
    * with the body.
+   *
+   * @method addMessageBody
+   * @param header {HeaderInfo}
+   * @param bodyInfo {BodyInfo}
+   * @param callback {Function}
    */
   addMessageBody: function ifs_addMessageBody(header, bodyInfo, callback) {
     if (this._pendingLoads.length) {
@@ -4135,20 +4212,26 @@ FolderStorage.prototype = {
    * Additionally the final argument allows you to send an event to any client
    * listening for changes on a given body.
    *
-   *    // client listening for a body change event
+   *     // client listening for a body change event
    *
-   *    // ( body is a MessageBody )
-   *    body.onchange = function(detail, bodyInfo) {
-   *      // detail => { changeType: x, value: y }
-   *    };
+   *     // ( body is a MessageBody )
+   *     body.onchange = function(detail, bodyInfo) {
+   *       // detail => { changeType: x, value: y }
+   *     };
    *
-   *    // in the backend
+   *     // in the backend
    *
-   *    storage.updateMessageBody(
-   *      header,
-   *      changedBodyInfo,
-   *      { changeType: x, value: y }
-   *    );
+   *     storage.updateMessageBody(
+   *       header,
+   *       changedBodyInfo,
+   *       { changeType: x, value: y }
+   *     );
+   *
+   * @method updateMessageBody
+   * @param header {HeaderInfo}
+   * @param bodyInfo {BodyInfo}
+   * @param [eventDetails]
+   * @param callback {Function}
    */
   updateMessageBody: function(header, bodyInfo, eventDetails, callback) {
     if (typeof(eventDetails) === 'function') {
