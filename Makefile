@@ -78,12 +78,18 @@ gaia-symlink:
 	echo "You need to create a symlink 'gaia-symlink' pointing at the gaia dir"
 
 YUIDOC := ./node_modules/.bin/yuidoc
+BFDOCS := ./node_modules/.bin/bfdocs
 # run yuidoc at the root of the tree we want to document because it has the
 # annoying habit of recursing into every subdirectory and through every symlink
 # it encounters, even when you explicitly tell it to stay out with -x.
 .PHONY: docs
 docs:
+	-rm -rf ./docs
+	-mkdir docs
+	-mkdir docs/deps
+	cp -r tools/docs/runtime-deps/jumly docs/deps
 	cd data/lib; ../../$(YUIDOC) -o ../../docs/api -c ../../tools/docs/yuidoc.json .
+	$(BFDOCS) docsrc/ --title "Gaia Email, Yeah!"
 
 B2GBD := b2g-builddir-symlink
 ifeq ($(wildcard b2g-bindir-symlink),)

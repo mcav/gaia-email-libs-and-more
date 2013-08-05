@@ -7,7 +7,8 @@
   },
 
   "devDependencies": {
-    "marked": "0.2.9",
+    "beautiful-docs": "~1.0",
+    "marked": "~0.2",
     "yuidocjs": "~0.3"
   }
 }
