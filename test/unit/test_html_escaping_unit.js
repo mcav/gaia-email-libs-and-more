@@ -1,4 +1,4 @@
-define(['rdcommon/testcontext', 'mailapi/htmlchew', 'exports'],
+define(['rdcommon/testcontext', 'src/htmlchew', 'exports'],
        function($tc, $htmlchew, exports) {
 
 var TD = exports.TD = $tc.defineTestsFor(

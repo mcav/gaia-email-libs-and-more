@@ -36,45 +36,15 @@ help:
 	@echo ""
 	@echo "To enable verbose log output to the console: TEST_LOG_ENABLE=true"
 
-# full rsync
-RSYNC=rsync -avL
-# rsync JS files only, ignore jsdoc subdir.
-RSYNC_JS=rsync -r -f "- jsdoc/" -f "+ */" -f "+ *.js" -f "- *" --prune-empty-dirs
-
-VOLO=./scripts/volo
-
 TEST_VARIANT ?= all
 
-# Volo does its transformations in-place, so we need to copy junk across,
-#  transform it, then copy it to the destination dir.
-NODE_PKGS := addressparser mailparser mailcomposer mimelib simplesmtp browserify-builtins
+OUR_JS_DEPS := $(wildcard src/*/*.js) $(wildcard src/*.js)
 
-TRANS_NODE_PKGS := $(addprefix node-transformed-deps/,$(NODE_PKGS))
-DEP_NODE_PKGS := $(addprefix data/deps/,$(NODE_PKGS))
-
-node-transformed-deps:
-	mkdir -p node-transformed-deps
-
-$(TRANS_NODE_PKGS): node-transformed-deps
-	$(RSYNC) node-deps/$(notdir $@) node-transformed-deps
-	$(VOLO) npmrel $@
-	touch $@
-
-# the cp is for main shims created by volo
-$(DEP_NODE_PKGS): $(TRANS_NODE_PKGS)
-	mkdir -p $@
-	-cp node-transformed-deps/$(notdir $@).js data/deps/
-	$(RSYNC_JS) node-transformed-deps/$(notdir $@)/ $@/
-	touch $@
-
-OUR_JS_DEPS := $(wildcard data/lib/mailapi/*.js) $(wildcard data/lib/mailapi/imap/*.js) $(wildcard data/lib/mailapi/smtp*.js) $(wildcard data/lib/mailapi/activesync/*.js) $(wildcard data/deps/rdcommon/*.js)
-
-install-into-gaia: clean gaia-symlink $(DEP_NODE_PKGS) $(OUR_JS_DEPS)
+install-into-gaia: clean gaia-symlink $(OUR_JS_DEPS)
 	rm -rf `readlink -n gaia-symlink`/apps/email/js/ext
 	node scripts/copy-to-gaia.js gaia-symlink/apps/email
 
-build: $(DEP_NODE_PKGS) $(OUR_JS_DEPS)
-
+build: $(OUR_JS_DEPS)
 
 .PHONY: download-b2g
 download-b2g: b2g

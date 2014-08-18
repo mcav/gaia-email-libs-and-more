@@ -6,22 +6,22 @@
 
 // prefixing everything since we are running in the global scope and I don't
 // want the modules to accidentally see these because of a lack of shadowing.
-var $_mailuniverse = require('mailapi/mailuniverse'),
-    $_accountcommon = require('mailapi/accountcommon'),
-    $_mailbridge = require('mailapi/mailbridge'),
-    $_mailapi = require('mailapi/mailapi'),
-    $_allback = require('mailapi/allback'),
-    $_date = require('mailapi/date'),
-    $_syncbase = require('mailapi/syncbase'),
-    $_imapfolder = require('mailapi/imap/folder'),
-    $_mailslice = require('mailapi/mailslice'),
-    $_quotechew = require('mailapi/quotechew'),
+var $_mailuniverse = require('src/mailuniverse'),
+    $_accountcommon = require('src/accountcommon'),
+    $_mailbridge = require('src/mailbridge'),
+    $_mailapi = require('src/mailapi'),
+    $_allback = require('src/allback'),
+    $_date = require('src/date'),
+    $_syncbase = require('src/syncbase'),
+    $_imapfolder = require('src/imap/folder'),
+    $_mailslice = require('src/mailslice'),
+    $_quotechew = require('src/quotechew'),
     $_wbxml = require('activesync/wbxml/wbxml'),
     $_ascp = require('activesync/codepages'),
     $_Q = require('q'),
     $tc = require('rdcommon/testcontext'),
     $_testdriver = require('rdcommon/testdriver'),
-    $th_imap = require('mailapi/testhelper');
+    $th_imap = require('src/testhelper');
 
 // this is relative to our caller, which is a bit crap, but should be fine
 load('resources/messageGenerator.js');

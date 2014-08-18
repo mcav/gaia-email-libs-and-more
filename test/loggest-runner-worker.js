@@ -4,14 +4,12 @@
 define(
   [
     'q',
-    'mailapi/shim-sham', // needed for global mocks
-    'mailapi/worker-router',
+    'src/worker-router',
     'rdcommon/testdriver',
     'require'
   ],
   function(
     $Q,
-    $shimsham,
     $router,
     $td,
     require

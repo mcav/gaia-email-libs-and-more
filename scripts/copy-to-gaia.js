@@ -22,127 +22,32 @@ buildOptions = {
   optimize: 'none', //'uglify',
   //Keep any "use strict" in the built code.
   useStrict: true,
-  paths: {
-    'alameda': 'deps/alameda',
-    'config': 'scripts/config',
-
-    // front end of mail supplies its own evt
-    'evt': 'empty:',
-
-    // NOP's
-    'prim': 'empty:',
-    'http': 'data/lib/nop',
-    'https': 'data/lib/nop2',
-    'url': 'data/lib/nop3',
-    'fs': 'data/lib/nop4',
-    'xoauth2': 'data/lib/nop6',
-
-    'q': 'empty:',
-    'text': 'data/lib/text',
-    'mix': 'data/lib/mix',
-    // silly shim
-    'event-queue': 'data/lib/js-shims/event-queue',
-    'microtime': 'data/lib/js-shims/microtime',
-    'path': 'data/lib/js-shims/path',
-    'utf7': 'data/lib/js-shims/utf7',
-
-    'wbxml': 'deps/activesync/wbxml/wbxml',
-    'activesync': 'deps/activesync',
-
-    'bleach': 'deps/bleach.js/lib/bleach',
-
-    'imap': 'data/lib/imap',
-    'pop3': 'data/lib/pop3',
-
-    'rdplat': 'data/lib/rdplat',
-    'rdcommon': 'data/lib/rdcommon',
-    'mailapi': 'data/lib/mailapi',
-
-    'buffer': 'data/lib/node-buffer',
-    'crypto': 'data/lib/node-crypto',
-    'net': 'data/lib/node-net',
-    'tls': 'data/lib/node-tls',
-    'os': 'data/lib/node-os',
-
-    'iconv': 'data/lib/js-shims/faux-iconv',
-    'iconv-lite': 'data/libs/js-shims/faux-iconx',
-    'encoding': 'data/lib/js-shims/faux-encoding',
-
-    'assert': 'data/deps/browserify-builtins/assert',
-    'events': 'data/deps/browserify-builtins/events',
-    'stream': 'data/deps/browserify-builtins/stream',
-    'util': 'data/deps/browserify-builtins/util',
-
-    // These used to be packages but we have AMD shims for their mains where
-    // appropriate, so we can just use paths.
-    'addressparser': 'data/deps/addressparser',
-    'mimelib': 'data/deps/mimelib',
-    'mailparser': 'data/deps/mailparser/lib',
-    'simplesmtp': 'data/deps/simplesmtp',
-    'mailcomposer': 'data/deps/mailcomposer'
-  },
-
-  // Rewrite the waitSeconds config so that we never time out
-  // waiting for modules to load in production. See config.js
-  // for more details.
-  onBuildWrite: function(id, url, contents) {
-    if (id === 'config') {
-      return contents.replace(/waitSeconds:\s*\d+/, 'waitSeconds: 0');
-    } else {
-      return contents;
-    }
-  }
 };
 
-var bootstrapIncludes = [
-  'alameda', 'config',
-  // Directly needed shims and their shim deps (node Buffer abstraction, etc.)
-  'mailapi/shim-sham',
-  'event-queue',
-  // Required for all offline support
-  'mailapi/mailslice',
-  // Commonly needed mail rep mutation funcs.
-  'mailapi/db/mail_rep',
-  // Searches can happen offline.
-  'mailapi/searchfilter',
-  // Job/operations are currently not gated, although they could be...
-  'mailapi/jobs/outbox',
-  'mailapi/jobmixins',
-  // ...and this does include draft jobs and their deps
-  'mailapi/drafts/jobs', 'mailapi/drafts/draft_rep',
-  'mailapi/async_blob_fetcher',
-  // Common account logic is required for everything
-  'mailapi/accountmixins',
-  // Common/tiny utilities; some could be broken out further
-  'util', 'stream', 'crypto', 'mix',
-  'encoding', 'mailapi/b64',
-  // Bootstraps the universe, pulls in our core dependencies like the universe
-  // and the mailbridge.
-  'mailapi/worker-setup'];
 var standardExcludes = [].concat(bootstrapIncludes);
-var standardPlusComposerExcludes = ['mailapi/drafts/composer']
+var standardPlusComposerExcludes = ['src/drafts/composer']
       .concat(standardExcludes);
 
 var configs = [
   // root aggregate loaded in worker context
   {
-    name: 'mailapi/worker-bootstrap',
+    name: 'src/worker-bootstrap',
     include: bootstrapIncludes,
-    insertRequire: ['mailapi/worker-setup'],
-    out: jsPath + '/mailapi/worker-bootstrap.js'
+    insertRequire: ['src/worker-setup'],
+    out: jsPath + '/src/worker-bootstrap.js'
   },
 
   // root aggregate loaded in main frame context
   {
-    name: 'mailapi/main-frame-setup',
-    out: jsPath + '/mailapi/main-frame-setup.js'
+    name: 'src/main-frame-setup',
+    out: jsPath + '/src/main-frame-setup.js'
   },
 
   // needed by all kinds of different layers, so broken out on its own:
   // - mailparser/mailparser
-  // - mailapi/drafts/composer (specifically mailcomposer)
-  // - mailapi/chewlayer (specifically mailapi/imap/imapchew statically)
-  // - activesync (specifically mailapi/activesync/folder dynamically)
+  // - src/drafts/composer (specifically mailcomposer)
+  // - src/chewlayer (specifically src/imap/imapchew statically)
+  // - activesync (specifically src/activesync/folder dynamically)
   {
     name: 'mimelib',
     exclude: standardExcludes,
@@ -153,12 +58,12 @@ var configs = [
   // It's not clear why imapchew is in this layer; seems like it could be in
   // imap/protocollayer.
   {
-    name: 'mailapi/chewlayer',
+    name: 'src/chewlayer',
     create: true,
-    include: ['mailapi/quotechew', 'mailapi/htmlchew', 'mailapi/mailchew',
-              'mailapi/imap/imapchew'],
+    include: ['src/quotechew', 'src/htmlchew', 'src/mailchew',
+              'src/imap/imapchew'],
     exclude: standardExcludes.concat(['mimelib']),
-    out: jsPath + '/mailapi/chewlayer.js'
+    out: jsPath + '/src/chewlayer.js'
   },
 
   // mailparser lib and deps sans mimelib
@@ -170,56 +75,56 @@ var configs = [
 
   // our composition abstraction and its deps
   {
-    name: 'mailapi/drafts/composer',
+    name: 'src/drafts/composer',
     exclude: standardExcludes.concat(['mailparser/mailparser',
-                                      'mailapi/quotechew',
-                                      'mailapi/htmlchew',
-                                      'mailapi/imap/imapchew',
+                                      'src/quotechew',
+                                      'src/htmlchew',
+                                      'src/imap/imapchew',
                                       'mimelib']),
-    out: jsPath + '/mailapi/drafts/composer.js'
+    out: jsPath + '/src/drafts/composer.js'
   },
 
   // imap protocol and probing support
   {
-    name: 'mailapi/imap/probe',
+    name: 'src/imap/probe',
     exclude: standardPlusComposerExcludes.concat(['mailparser/mailparser']),
-    out: jsPath + '/mailapi/imap/probe.js'
+    out: jsPath + '/src/imap/probe.js'
   },
 
   // pop3 protocol and probing support
   {
-    name: 'mailapi/pop3/probe',
+    name: 'src/pop3/probe',
     exclude: standardPlusComposerExcludes.concat(['mailparser/mailparser']),
-    out: jsPath + '/mailapi/pop3/probe.js'
+    out: jsPath + '/src/pop3/probe.js'
   },
 
   // imap online support
   {
-    name: 'mailapi/imap/protocollayer',
+    name: 'src/imap/protocollayer',
     exclude: standardPlusComposerExcludes.concat(
-      ['mailparser/mailparser', 'mimelib', 'mailapi/imap/imapchew']
+      ['mailparser/mailparser', 'mimelib', 'src/imap/imapchew']
     ),
     include: [
-      'mailapi/imap/protocol/sync',
-      'mailapi/imap/protocol/bodyfetcher',
-      'mailapi/imap/protocol/textparser',
-      'mailapi/imap/protocol/snippetparser'
+      'src/imap/protocol/sync',
+      'src/imap/protocol/bodyfetcher',
+      'src/imap/protocol/textparser',
+      'src/imap/protocol/snippetparser'
     ],
-    out: jsPath + '/mailapi/imap/protocollayer.js',
+    out: jsPath + '/src/imap/protocollayer.js',
     create: true
   },
   // smtp online support
   {
-    name: 'mailapi/smtp/probe',
+    name: 'src/smtp/probe',
     exclude: standardPlusComposerExcludes,
-    out: jsPath + '/mailapi/smtp/probe.js'
+    out: jsPath + '/src/smtp/probe.js'
   },
 
   // activesync configurator, offline support
   {
-    name: 'mailapi/activesync/configurator',
+    name: 'src/activesync/configurator',
     exclude: standardPlusComposerExcludes,
-    out: jsPath + '/mailapi/activesync/configurator.js'
+    out: jsPath + '/src/activesync/configurator.js'
   },
 
   // activesync configurator, offline support
@@ -231,18 +136,18 @@ var configs = [
 
   // activesync online support
   {
-    name: 'mailapi/activesync/protocollayer',
+    name: 'src/activesync/protocollayer',
     create: true,
     include: ['wbxml', 'activesync/protocol'],
-    exclude: standardExcludes.concat(['mailapi/activesync/configurator']),
-    out: jsPath + '/mailapi/activesync/protocollayer.js'
+    exclude: standardExcludes.concat(['src/activesync/configurator']),
+    out: jsPath + '/src/activesync/protocollayer.js'
   },
 
   // imap/smtp configuration, offline support
   {
-    name: 'mailapi/composite/configurator',
+    name: 'src/composite/configurator',
     exclude: standardPlusComposerExcludes,
-    out: jsPath + '/mailapi/composite/configurator.js'
+    out: jsPath + '/src/composite/configurator.js'
   }
 ];
 

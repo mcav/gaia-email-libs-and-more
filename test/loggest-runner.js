@@ -4,17 +4,15 @@
 define(
   [
     'q',
-    'mailapi/shim-sham', // needed for global mocks
-    'mailapi/worker-support/main-router',
+    'src/worker-support/main-router',
     // XXX Ideally we would only load this at the request of the test, but
     // there's no real harm in always spinning this up for now.
-    'mailapi/worker-support/testhelper-main',
+    'src/worker-support/testhelper-main',
     'rdcommon/testdriver',
     'require'
   ],
   function(
     $Q,
-    $shimsham,
     $router,
     $th_main,
     $td,
@@ -47,7 +45,7 @@ console.warn('locSource.location.search', locSource.location.search);
 var env = getEnv();
 
 // does not include a trailing '.js'!
-var testModuleName = 'tests/' + env.testName;
+var testModuleName = '../../test/unit/' + env.testName;
 var testParams = env.testParams ? JSON.parse(env.testParams) : {};
 
 console._enabled = testParams.testLogEnable;

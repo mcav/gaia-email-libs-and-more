@@ -1,19 +1,20 @@
 define(function(require, exports, $module) {
 
 var $log = require('rdcommon/log'),
-    $allback = require('mailapi/allback'),
-    $mailuniverse = require('mailapi/mailuniverse'),
-    $mailbridge = require('mailapi/mailbridge'),
-    $maildb = require('mailapi/maildb'),
-    $mailapi = require('mailapi/mailapi'),
-    $date = require('mailapi/date'),
-    $accountcommon = require('mailapi/accountcommon'),
-    $imapacct = require('mailapi/imap/account'),
-    $pop3acct = require('mailapi/pop3/account'),
-    $pop3sync = require('mailapi/pop3/sync'),
-    $activesyncacct = require('mailapi/activesync/account'),
-    $activesyncfolder = require('mailapi/activesync/folder'),
-    $activesyncjobs = require('mailapi/activesync/jobs'),
+    $allback = require('src/allback'),
+    $mailuniverse = require('src/mailuniverse'),
+    $mailbridge = require('src/mailbridge'),
+    $maildb = require('src/maildb'),
+    $mailapi = require('src/mailapi'),
+    $slog = require('slog'),
+    $date = require('src/date'),
+    $accountcommon = require('src/accountcommon'),
+    $imapacct = require('src/imap/account'),
+    $pop3acct = require('src/pop3/account'),
+    $pop3sync = require('src/pop3/sync'),
+    $activesyncacct = require('src/activesync/account'),
+    $activesyncfolder = require('src/activesync/folder'),
+    $activesyncjobs = require('src/activesync/jobs'),
     $msggen = require('tests/resources/messageGenerator'),
     $mailslice = require('mailapi/mailslice'),
     $cronsync = require('mailapi/cronsync'),
@@ -24,10 +25,8 @@ var $log = require('rdcommon/log'),
     $pop3jobs = require('mailapi/pop3/jobs'),
     $util = require('mailapi/util'),
     $errbackoff = require('mailapi/errbackoff'),
-    $imapjs = require('imap'),
     $smtpacct = require('mailapi/smtp/account'),
     $router = require('mailapi/worker-router'),
-
     $th_fake_imap_server = require('tests/resources/th_fake_imap_server'),
     $th_fake_pop3_server = require('tests/resources/th_fake_pop3_server'),
     $th_real_imap_server = require('tests/resources/th_real_imap_server'),
@@ -218,7 +217,6 @@ var TestUniverseMixins = {
         growRefreshThresh: -1,
       });
     }
-
 
     /**
      * Creates the mail universe, and a bridge, and MailAPI.
@@ -2499,8 +2497,9 @@ var TestFolderMixins = {
     var message = this.findServerMessage(guid);
     // XXX: this code gets repeated a few times; put it in messageGenerator?
     var bodyPart = message.bodyPart;
-    while (!(bodyPart instanceof $msggen.SyntheticPartLeaf))
+    while (bodyPart.parts) {
       bodyPart = bodyPart.parts[0];
+    }
 
     if (bodyPart._contentType === 'text/html')
       return bodyPart.body;
@@ -2537,13 +2536,9 @@ var TestCompositeAccountMixins = {
     }
 
     self.eJobDriver = self.T.actor(Type + 'JobDriver', self.__name, null, self);
-    self.eSmtpAccount = self.T.actor('SmtpAccount', self.__name, null, self);
     self.eBackoff = self.T.actor('BackoffEndpoint', self.__name, null, self);
 
     var TEST_PARAMS = self.RT.envOptions;
-
-    // turn on SMTP logging for our unit tests
-    $smtpacct.ENABLE_SMTP_LOGGING = true;
 
     self.imapHost = self.pop3Host = null;
     self.imapPort = self.pop3Port = null;
@@ -2597,8 +2592,6 @@ var TestCompositeAccountMixins = {
   expect_shutdown: function() {
     this.RT.reportActiveActorThisStep(this.eFolderAccount);
     this.eFolderAccount.expectOnly__die();
-    this.RT.reportActiveActorThisStep(this.eSmtpAccount);
-    this.eSmtpAccount.expectOnly__die();
   },
 
   expect_saveState: function() {
@@ -2626,7 +2619,6 @@ var TestCompositeAccountMixins = {
 
   _expect_restore: function() {
     this.RT.reportActiveActorThisStep(this.eFolderAccount);
-    this.RT.reportActiveActorThisStep(this.eSmtpAccount);
     this.RT.reportActiveActorThisStep(this.eBackoff);
   },
 
@@ -2673,7 +2665,6 @@ var TestCompositeAccountMixins = {
 
       self.RT.reportActiveActorThisStep(self.eFolderAccount);
       self.RT.reportActiveActorThisStep(self.eJobDriver);
-      self.RT.reportActiveActorThisStep(self.eSmtpAccount);
       self.RT.reportActiveActorThisStep(self.eBackoff);
 
       self.universe = self.testUniverse.universe;
@@ -3612,9 +3603,6 @@ exports.TESTHELPER = {
     $imapacct.LOGFAB, $imapfolder.LOGFAB, $imapjobs.LOGFAB,
     // POP3!
     $pop3acct.LOGFAB, $pop3sync.LOGFAB, $pop3jobs.LOGFAB,
-    $imapjs.LOGFAB,
-    // SMTP!
-    $smtpacct.LOGFAB,
     // ActiveSync!
     $activesyncacct.LOGFAB, $activesyncfolder.LOGFAB, $activesyncjobs.LOGFAB,
   ],

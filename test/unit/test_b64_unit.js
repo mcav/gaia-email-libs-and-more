@@ -2,7 +2,7 @@
  * Test our rfc2822-specialized base64 encoder.
  **/
 define(['rdcommon/testcontext',
-        'mailapi/b64', 'exports'],
+        'src/b64', 'exports'],
        function($tc, b64,
                 exports) {
 

@@ -1,5 +1,5 @@
 define(['rdcommon/testcontext', './resources/th_main',
-        'mailapi/syncbase', 'exports'],
+        'src/syncbase', 'exports'],
        function($tc, $th_imap, $sync, exports) {
 
 var TD = exports.TD = $tc.defineTestsFor(

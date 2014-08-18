@@ -12,7 +12,7 @@
 define(
   [
     'rdcommon/log',
-    'mailapi/mailapi',
+    'src/mailapi',
     'module',
     'exports'
   ],
