@@ -3,7 +3,6 @@
  **/
 define(
   [
-    'q',
     'src/worker-support/main-router',
     // XXX Ideally we would only load this at the request of the test, but
     // there's no real harm in always spinning this up for now.
@@ -12,7 +11,6 @@ define(
     'require'
   ],
   function(
-    $Q,
     $router,
     $th_main,
     $td,

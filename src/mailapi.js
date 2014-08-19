@@ -2761,6 +2761,9 @@ MailAPI.prototype = {
    *   @case['imap-disabled']{
    *     IMAP support is not enabled for the Gmail account in use.
    *   }
+   *   @case['pop3-disabled']{
+   *     POP3 support is not enabled for the Gmail account in use.
+   *   }
    *   @case['needs-app-pass']{
    *     The Gmail account has two-factor authentication enabled, so the user
    *     must provide an application-specific password.

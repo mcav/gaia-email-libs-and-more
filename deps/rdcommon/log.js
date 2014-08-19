@@ -228,13 +228,13 @@
 
 define(
   [
-    'q',
+    './deferred',
     'microtime',
     './extransform',
     'exports'
   ],
   function(
-    $Q,
+    Deferred,
     $microtime,
     $extransform,
     exports
@@ -604,8 +604,9 @@ var TestActorProtoBase = {
       return this._expectationsMetSoFar;
     }
 
-    if (!this._deferred)
-      this._deferred = $Q.defer();
+    if (!this._deferred) {
+      this._deferred = new Deferred();
+    }
     return this._deferred.promise;
   },
 

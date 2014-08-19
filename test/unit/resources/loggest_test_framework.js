@@ -18,7 +18,6 @@ var $_mailuniverse = require('src/mailuniverse'),
     $_quotechew = require('src/quotechew'),
     $_wbxml = require('activesync/wbxml/wbxml'),
     $_ascp = require('activesync/codepages'),
-    $_Q = require('q'),
     $tc = require('rdcommon/testcontext'),
     $_testdriver = require('rdcommon/testdriver'),
     $th_imap = require('src/testhelper');
@@ -69,14 +68,13 @@ function runMyTests(maxRunInSecs) {
   };
   gRunner = new $_testdriver.TestDefinerRunner(
     TD, true, options);
-  $_Q.when(gRunner.runAll(ErrorTrapper, options.defaultStepDuration),
-           function success() {
-             dumpLogs();
-             do_check_true(true);
-             do_test_finished();
-           },
-           function failure() {
-             do_throw('A test failed!');
-             do_test_finished();
-           });
+  gRunner.runAll(ErrorTrapper, options.defaultStepDuration)
+    .then(function success() {
+      dumpLogs();
+      do_check_true(true);
+      do_test_finished();
+    }, function failure() {
+      do_throw('A test failed!');
+      do_test_finished();
+    });
 }

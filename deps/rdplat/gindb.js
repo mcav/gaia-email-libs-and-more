@@ -12,19 +12,17 @@
 
 define(
   [
-    'q',
+    'rdcommon/deferred',
     'rdcommon/gendb-logdef',
     'module',
     'exports'
   ],
   function(
-    $Q,
+    Deferred,
     $_logdef,
     $module,
     exports
   ) {
-const when = $Q.when;
-
 const LOGFAB = exports.LOGFAB = $_logdef.LOGFAB;
 
 var IndexedDB;
@@ -86,7 +84,7 @@ IndexedDbConn.prototype = {
    * }
    */
   defineSchema: function(schema) {
-    var dbDeferred = $Q.defer(), self = this, nsprefix = this._nsprefix,
+    var dbDeferred = new Deferred(), self = this, nsprefix = this._nsprefix,
         dbOpenRequest = IndexedDB.open("deuxdrop-" + nsprefix, DB_ONLY_VERSION);
     dbOpenRequest.onerror = function(event) {
       self._log.dbErr(dbOpenRequest.error.name);
@@ -150,7 +148,7 @@ IndexedDbConn.prototype = {
   //  for us because it's intimately aware of the JS object system.
 
   getRowCell: function(tableName, rowId, columnName) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.getRowCell(tableName, rowId, columnName);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_ONLY);
@@ -168,7 +166,7 @@ IndexedDbConn.prototype = {
   },
 
   boolcheckRowCell: function(tableName, rowId, columnName) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.getRowCell(tableName, rowId, columnName);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_ONLY);
@@ -183,7 +181,7 @@ IndexedDbConn.prototype = {
   },
 
   assertBoolcheckRowCell: function(tableName, rowId, columnName, exClass) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.getRowCell(tableName, rowId, columnName);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_ONLY);
@@ -219,7 +217,7 @@ IndexedDbConn.prototype = {
    * ]
    */
   getRow: function(tableName, rowId, startPrefix, endPrefix) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.getRow(tableName, rowId, columnFamilies);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_WRITE);
@@ -250,7 +248,7 @@ IndexedDbConn.prototype = {
   },
 
   putCells: function(tableName, rowId, cells) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.putCells(tableName, rowId, cells);
 
     var transaction = this._db.transaction([tableName],
@@ -269,7 +267,7 @@ IndexedDbConn.prototype = {
   },
 
   deleteRow: function(tableName, rowId) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.deleteRow(tableName, rowId);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_WRITE);
@@ -293,7 +291,7 @@ IndexedDbConn.prototype = {
   },
 
   deleteRowCell: function(tableName, rowId, columnName) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.deleteRowCell(tableName, rowId, columnName);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_WRITE);
@@ -309,7 +307,7 @@ IndexedDbConn.prototype = {
   },
 
   incrementCell: function(tableName, rowId, columnName, delta) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.incrementCell(tableName, rowId, columnName, delta);
     var transaction = this._db.transaction([tableName],
                                            IDBTransaction.READ_WRITE);
@@ -338,7 +336,8 @@ IndexedDbConn.prototype = {
     //  we may want to specialize this at some point.
     var self = this;
     this._log.raceCreateRow(tableName, rowId, probeCellName, cells);
-    return when(this.incrementCell(tableName, rowId, probeCellName, 1),
+    return this.incrementCell(tableName, rowId, probeCellName, 1)
+      .then(
       function(valAfterIncr) {
         // - win
         if (valAfterIncr === 1) {
@@ -381,7 +380,7 @@ IndexedDbConn.prototype = {
                       lowValue, lowObjectName, lowInclusive,
                       highValue, highObjectName, highInclusive) {
     const dir = desiredDir;
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     var minValStr = (lowValue == null) ? '-inf' : lowValue,
         maxValStr = (highValue == null) ? '+inf' : highValue;
     this._log.scanIndex(tableName, indexName, indexParam, maxValStr, minValStr);
@@ -435,7 +434,7 @@ IndexedDbConn.prototype = {
    */
   updateIndexValue: function(tableName, indexName, indexParam,
                              objectName, newValue) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.updateIndexValue(tableName, indexName, indexParam,
                                objectName, newValue);
     var aggrName = tableName + INDEX_DELIM + indexName;
@@ -467,7 +466,7 @@ IndexedDbConn.prototype = {
     // there is nothing to do if there are no updates to perform
     if (updates.length === 0)
       return null;
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
 
     var aggrNames = [], iUpdate, update;
 
@@ -515,7 +514,7 @@ IndexedDbConn.prototype = {
    * ]
    */
   deleteMultipleIndexValues: function(tableName, nukes) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
 
     var aggrNames = [], iNuke, nuke;
 
@@ -557,7 +556,7 @@ IndexedDbConn.prototype = {
    */
   maximizeIndexValue: function(tableName, indexName, indexParam,
                                objectName, newValue) {
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
     this._log.maximizeIndexValue(tableName, indexName, indexParam,
                                  objectName, newValue);
     var aggrName = tableName + INDEX_DELIM + indexName;
@@ -596,7 +595,7 @@ IndexedDbConn.prototype = {
     if (maxdates.length === 0)
       return null;
 
-    var deferred = $Q.defer();
+    var deferred = new Deferred();
 
     var aggrNames = [], iMaxdate, maxdate;
 

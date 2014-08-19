@@ -3,13 +3,11 @@
  **/
 define(
   [
-    'q',
     'src/worker-router',
     'rdcommon/testdriver',
     'require'
   ],
   function(
-    $Q,
     $router,
     $td,
     require
@@ -94,7 +92,9 @@ var sendMessage = $router.registerSimple('loggest-runner', function(msg) {
         exposeToTest: msg.args.testParams,
         resultsReporter: function(jsonnableObj) {
           sendMessage('done', JSON.stringify(jsonnableObj));
-          self.close();
+          // XXX: With self.close(), mcav gets a segfault?
+          // Without, it exits correctly...
+          //self.close();
         }
       },
       ErrorTrapper,

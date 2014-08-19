@@ -41,20 +41,19 @@
 
 define(
   [
-    'q',
+    './deferred',
     './testcontext',
     './extransform',
     'require',
     'exports'
   ],
   function(
-    $Q,
+    Deferred,
     $testcontext,
     $extransform,
     require,
     exports
   ) {
-var when = $Q.when;
 
 /**
  * What should be the timeout for test steps where an explicit duration has
@@ -222,11 +221,6 @@ function TestDefinerRunner(testDefiner, superDebug, exposeToTestOptions,
   this._superDebug = superDebug;
 
   this._logBadThingsToLogger = null;
-
-  // If Q has the (currently speculative) functionality to report unhandled
-  //  rejections and track live promises so that we can report outstanding ones,
-  //  then let's remember that.
-  this._fancyQ = 'loggingEnableFriendly' in $Q;
 }
 exports.TestDefinerRunner = TestDefinerRunner;
 TestDefinerRunner.prototype = {
@@ -271,7 +265,7 @@ TestDefinerRunner.prototype = {
         superDebug(" :( encountered an error in the step func:", rval);
       step.log.run_end();
       step.log.result('fail');
-      return false;
+      return Promise.resolve(false);
     }
 
     // -- wait on actors' expectations (if any) promise-style
@@ -282,7 +276,7 @@ TestDefinerRunner.prototype = {
     for (iActor = 0; iActor < liveActors.length; iActor++) {
       actor = liveActors[iActor];
       var waitVal = actor.__waitForExpectations();
-      if ($Q.isPromise(waitVal)) {
+      if (waitVal.then) {
         promises.push(waitVal);
         if (superDebug)
           superDebug(" actor", actor.__defName, actor.__name,
@@ -317,11 +311,11 @@ TestDefinerRunner.prototype = {
       }
       this._runtimeContext._liveActors = null;
 
-      return allGood;
+      return Promise.resolve(allGood);
     }
     else {
       // create a deferred so we can generate a timeout.
-      var deferred = $Q.defer(), self = this;
+      var deferred = new Deferred(), self = this;
 
       function failStep() {
         // - tell the actors to fail any remaining expectations
@@ -336,13 +330,9 @@ TestDefinerRunner.prototype = {
         self._runtimeContext._liveActors = null;
 
         // - generate errors for outstanding promises...
-        if (self._fancyQ) {
-          var unresolved = $Q.friendlyUnresolvedDeferreds();
-          for (var iUnres = 0; iUnres < unresolved.length; iUnres++) {
-            var annotation = unresolved[iUnres];
-            step.log.unresolvedPromise(annotation);
-          }
-        }
+        Deferred.getAllActiveDeferreds().forEach(function(deferred) {
+          step.log.unresolvedPromise(deferred);
+        });
 
         if (superDebug)
           superDebug(' :( timeout, fail');
@@ -362,7 +352,7 @@ TestDefinerRunner.prototype = {
       // -- promise resolution/rejection handler
       if (this._superDebug)
         this._superDebug("waiting on", promises.length, "promises");
-      when($Q.all(promises), function passed() {
+      Promise.all(promises).then(function passed() {
         if (self._superDebug)
           self._superDebug("!! all resolved, deferred?", deferred !== null);
         if (!deferred) return;
@@ -408,7 +398,7 @@ TestDefinerRunner.prototype = {
    */
   skipTestStep: function(step) {
     step.log.result('skip');
-    return true;
+    return Promise.resolve(true);
   },
 
   /**
@@ -486,9 +476,9 @@ TestDefinerRunner.prototype = {
         var step = defContext.__steps[iStep++];
         var runIt = allPassed || (step.kind === 'cleanup');
         if (runIt)
-          when(self.runTestStep(step), runNextStep);
+          self.runTestStep(step).then(runNextStep);
         else // for stack simplicity, run the skip in a when, but not required.
-          when(self.skipTestStep(step), runNextStep);
+          self.skipTestStep(step).then(runNextStep);
       }
       runNextStep(true);
     });
@@ -522,7 +512,7 @@ TestDefinerRunner.prototype = {
       DEFAULT_STEP_TIMEOUT_MS = overrideStepDuration;
 
 //console.error(" runAll()");
-    var deferred = $Q.defer("TestDefinerRunner.runAll"),
+    var deferred = new Deferred("TestDefinerRunner.runAll"),
         iTestCase = 0, definer = this._testDefiner,
         self = this;
 
@@ -539,16 +529,14 @@ TestDefinerRunner.prototype = {
         definer._log.run_end();
         self._clearDefinerUnderTest(definer);
 
-        if (self._fancyQ) {
-          $Q.loggingDisable();
-        }
+        Deferred.clearActiveDeferreds();
 
 //console.error("   resolving!");
         deferred.resolve(self);
         return;
       }
       var testCase = definer.__testCases[iTestCase++];
-      when(self.runTestCase(testCase), runNextTestCase);
+      self.runTestCase(testCase).then(runNextTestCase);
     }
 
     // node.js will automatically terminate when the event loop says there is
@@ -573,48 +561,11 @@ TestDefinerRunner.prototype = {
     }
     errorTrapper.on('uncaughtException', uncaughtExceptionHandler);
 
-    if (self._fancyQ) {
-      const RE_IGNORE_FRAME = /(?:^native)|(?:\/q\.js$)|(?:^node.js$)/,
-            RE_IS_Q = /\/q\.js$/, RE_IS_FAIL = /^(?:exports\.)?fail$/;
-      $Q.loggingEnableFriendly({
-        unhandledRejections: uncaughtExceptionHandler,
-        /**
-         * Track unresolved promises, and try and automatically derive a
-         *  useful name from the caller by finding the first frame that has
-         *  nothing to do with Q.  In many cases, things will just be internal
-         *  Q book-keeping, and we try and handle that too.
-         */
-        trackLive: function fallbackAnnoGenerator() {
-          var e = {}, useFrame = 3;
-          Error.captureStackTrace(e);
-          // book-keeping will involve when (but could also be the user)
-          if (RE_IS_Q.test(e.stack[3].filename)) {
-            useFrame++;
-
-            if (e.stack[3].funcName === 'when') {
-              // Q.all uses .fail for its failure handler...
-              if (RE_IS_Q.test(e.stack[4].filename) &&
-                  RE_IS_FAIL.test(e.stack[4].funcName)) {
-                return "Q:fail?";
-              }
-            }
-            else if (RE_IS_FAIL.test(e.stack[3].funcName)) {
-              // this is coming frmo a backtrace that looks like it is part
-              //  of ALL.
-              return "Q:internals?";
-            }
-          }
-          while ((useFrame < e.stack.length) &&
-                 RE_IGNORE_FRAME.test(e.stack[useFrame].filename)) {
-            useFrame++;
-          }
-          var frame = e.stack[useFrame];
-          if (!frame)
-            return e.stack;
-          return frame.funcName + " @ " + frame.filename + ":" + frame.lineNo;
-        },
-      });
-    }
+    // Spit out some logs when a Deferred fails without being
+    // intercepted by a rejection handler. We used to do some fancy
+    // stuff with Q here, attempting to gather the relevant frame from
+    // a stack trace.
+    Deferred.setUnhandledRejectionHandler(uncaughtExceptionHandler);
 
     runNextTestCase();
     return deferred.promise;
@@ -725,7 +676,7 @@ exports.runTestsFromModule = function runTestsFromModule(testModuleName,
                                                          runOptions,
                                                          ErrorTrapper,
                                                          superDebug) {
-  var deferred = $Q.defer("runTestsFromModule:" + testModuleName);
+  var deferred = new Deferred("runTestsFromModule:" + testModuleName);
   var runner;
   function itAllGood() {
     if (superDebug)
@@ -794,7 +745,7 @@ exports.runTestsFromModule = function runTestsFromModule(testModuleName,
     runner = new TestDefinerRunner(
                    tmod.TD, superDebug, runOptions.exposeToTest,
                    resultsReporter);
-    when(runner.runAll(ErrorTrapper), itAllGood, itAllGood);
+    runner.runAll(ErrorTrapper).then(itAllGood, itAllGood);
   });
   return deferred.promise;
 };

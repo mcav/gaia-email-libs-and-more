@@ -53,12 +53,10 @@
 
 define(
   [
-    'q',
     './log',
     'exports'
   ],
   function(
-    $Q,
     $log,
     exports
   ) {
