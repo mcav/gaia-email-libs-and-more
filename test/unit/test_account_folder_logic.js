@@ -4,7 +4,7 @@
  **/
 
 define(['rdcommon/testcontext', './resources/th_main',
-        'activesync/codepages', 'mailapi/mailapi', 'exports'],
+        'activesync/codepages', 'src/mailapi', 'exports'],
        function($tc, $th_main, $ascp, $mailapi, exports) {
 
 var TD = exports.TD = $tc.defineTestsFor(

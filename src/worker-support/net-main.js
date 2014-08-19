@@ -100,8 +100,8 @@ function open(uid, host, port, options) {
   };
 
   sock.onclose = function(evt) {
-    delete sockInfoByUID[uid];
     self.sendMessage(uid, 'onclose');
+    delete sockInfoByUID[uid];
   };
 }
 
@@ -192,6 +192,7 @@ function close(uid) {
   sock.ondata = null;
   sock.ondrain = null;
   sock.onclose = null;
+  self.sendMessage(uid, 'onclose');
   delete sockInfoByUID[uid];
 }
 

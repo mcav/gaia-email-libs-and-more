@@ -39,19 +39,19 @@ TD.commonCase('stale connections', function(T, RT) {
     // sendMessage logic, double-check here to ensure we actually fire
     // off the 'close' event, i.e. the one we care about (rather than
     // 'end') per bug 1048487:
-    eSync.expect_namedValue('sending event', 'close');
-    var socket = conn.socket;
+    var socket = conn.client.socket;
     var origSendMessage = socket._sendMessage.bind(socket);
     socket._sendMessage = function(evt, args) {
-      eSync.namedValue('sending event', evt);
+      if (evt !== 'write') {
+        eSync.namedValue('sending event', evt);
+        socket._sendMessage = origSendMessage;
+      }
       origSendMessage(evt, args);
-      socket._sendMessage = origSendMessage;
     };
 
-    eSync.expect_event('incoming:clearTimeout');
-
-    testAccount.eImapAccount.expect_deadConnection();
+    eSync.expect_namedValue('sending event', 'close');
     eSync.expect_namedValue('closed', true);
+    testAccount.eImapAccount.expect_deadConnection();
 
     var onclose = conn.onclose;
     conn.onclose = function() {

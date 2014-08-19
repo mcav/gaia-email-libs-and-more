@@ -741,8 +741,6 @@ function(module, exports, log, tcpSocket, md5,
     typeInfo.md5 = null; // unsupported (unnecessary)
     typeInfo.childNodes = [];
 
-    // XXX: see ActiveSync Folder._updateBody. Unit tests get angry if
-    // there's a trailing newline in a body part.
     if (node.content != null) {
       node.content = mimefuncs.charset.decode(node.content, 'utf-8');
 

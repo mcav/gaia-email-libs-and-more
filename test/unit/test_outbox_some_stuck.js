@@ -7,7 +7,7 @@
  */
 define(['rdcommon/testcontext', './resources/th_main',
         './resources/th_devicestorage', './resources/messageGenerator',
-        'src/util', 'mailapi/accountcommon', 'exports'],
+        'src/util', 'src/accountcommon', 'exports'],
        function($tc, $th_imap, $th_devicestorage, $msggen,
                 $util, $accountcommon, exports) {
 

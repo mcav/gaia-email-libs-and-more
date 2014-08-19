@@ -293,8 +293,8 @@ var properties = {
         continue;
       console.log('Killing unused IMAP connection.');
       // this eats all future notifications, so we need to splice...
-      connInfo.conn.close();
       this._ownedConns.splice(i, 1);
+      connInfo.conn.client.close();
       this._LOG.deadConnection('unused', null);
     }
   },
@@ -384,7 +384,7 @@ var properties = {
       conn.client.TIMEOUT_ENTER_IDLE = $syncbase.STALE_CONNECTION_TIMEOUT_MS;
       conn.client.onidle = function() {
         console.warn('Killing stale IMAP connection.');
-        conn.close();
+        conn.client.close();
       };
     });
 
@@ -402,7 +402,6 @@ var properties = {
           return;
         }
       }
-      this._LOG.unknownDeadConnection();
     }.bind(this);
 
     conn.onerror = function(err) {
@@ -426,23 +425,7 @@ var properties = {
                                     connInfo.inUseBy.label);
         connInfo.inUseBy = null;
 
-        // XXX: no folder closing in browserbox.
-        // // (this will trigger an expunge if not read-only...)
-        // if (closeFolder && !resourceProblem && !this._TEST_doNotCloseFolder)
-        //   conn.closeBox(function() {});
-
-        // XXX: We are closing unused connections in an effort to stem
-        // problems associated with unreliable cell connections; they
-        // tend to be dropped unceremoniously when left idle for a
-        // long time, particularly on cell networks. NB: This will
-        // close the connection we just used, unless someone else is
-        // waiting for a connection.
-        if ($syncbase.KILL_CONNECTIONS_WHEN_JOBLESS &&
-            !this._demandedConns.length &&
-            !this.universe.areServerJobsWaiting(this)) {
-          this.closeUnusedConnections();
-        }
-        // We just freed up a connection, it may be appropriate to close it.
+         // We just freed up a connection, it may be appropriate to close it.
         this.maybeCloseUnusedConnections();
         return;
       }
@@ -830,14 +813,14 @@ var properties = {
       if (callback) {
         connInfo.inUseBy = { deathback: connDead };
         try {
-          connInfo.conn.close();
+          connInfo.conn.client.close();
         }
         catch (ex) {
           liveConns--;
         }
       }
       else {
-        connInfo.conn.close();
+        connInfo.conn.client.close();
       }
     }
 

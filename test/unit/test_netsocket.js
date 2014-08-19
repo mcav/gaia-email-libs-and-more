@@ -1,6 +1,6 @@
 define(['rdcommon/testcontext', './resources/th_main',
         'imap',
-        'mailapi/syncbase', 'exports'],
+        'src/syncbase', 'exports'],
        function($tc, $th_imap, $imap, $sync, exports) {
 
 var TD = exports.TD = $tc.defineTestsFor(
@@ -60,9 +60,9 @@ TD.commonCase('stale connections', function(T, RT) {
     testAccount.eImapAccount.expect_deadConnection();
     eSync.expect_namedValue('closed', true);
 
-    conn.on('close', function() {
+    conn.onclose = function() {
       eSync.namedValue('closed', true);
-    });
+    };
 
     fireTimeouts();
   });

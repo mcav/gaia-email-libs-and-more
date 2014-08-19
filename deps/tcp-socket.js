@@ -88,6 +88,7 @@ define(function(require, exports, module) {
     },
 
     _onclose: function() {
+      this._unregisterWithRouter();
       this.readyState = 'closed';
     },
 
@@ -106,8 +107,6 @@ define(function(require, exports, module) {
     close: function() {
       if (this.readyState !== 'closed') {
         this._sendMessage('close');
-        this._unregisterWithRouter();
-        this.readyState = 'closed';
       }
     },
 

@@ -146,12 +146,12 @@ TD.commonCase('account creation/deletion', function(T, RT) {
                                   testAccountA.accountId);
     eSliceCheck.expect_namedValue('folder[AB].account',
                                   testAccountC.accountId);
-    testAccountB.eOpAccount.expect_accountDeleted('saveAccountState');
 
     // IMAP accounts still have one connection open.
     if (TEST_PARAMS.type === 'imap') {
       testAccountB.eOpAccount.expect_deadConnection();
     }
+    testAccountB.eOpAccount.expect_accountDeleted('saveAccountState');
 
     // this does not have a callback, so use a ping to wait...
     gAllAccountsSlice.items[1].deleteAccount();
