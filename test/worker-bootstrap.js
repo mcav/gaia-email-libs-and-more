@@ -12,8 +12,10 @@
 var window = self;
 var testLogEnable = false;
 
+var gelamWorkerBaseUrl = '../js';
+
 importScripts('../js/ext/alameda.js');
-importScripts('../js/gelam-loader.js');
+importScripts('../js/worker-config.js');
 
 function makeConsoleFunc(prefix) {
   return function() {
@@ -49,8 +51,12 @@ window.navigator.mozContacts = {
 
 var document = { cookie: null };
 
-GelamLoader.config({
-  standalone: true
+// Configure path for the test directory, relative to gelamWorkerBaseUrl
+require.config({
+  paths: {
+    test: '../test',
+    gelam: '.'
+  }
 });
 
-GelamLoader.require(['../test/loggest-runner-worker']);
+require(['test/loggest-runner-worker']);

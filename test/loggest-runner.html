@@ -32,9 +32,18 @@
     return false;
   };
 </script>
-  <script defer src="/js/ext/alameda.js"></script>
-  <script defer src="/js/gelam-loader.js"></script>
-  <script defer src="loggest-runner-main.js"></script>
+<script src="/js/ext/alameda.js"></script>
+<script>
+  require.config({
+    baseUrl: '/js/ext',
+    paths: {
+      gelam: '../',
+      test: '../../test'
+    }
+  });
+  require(['test/loggest-runner']);
+  console.log('GOT HERE!!!');
+</script>
 </head>
 <body style="background-color: #eeeeff;">
 This is loggest-runner.html.

@@ -3,7 +3,7 @@
  **/
 define(
   [
-    'worker-router',
+    'gelam/worker-router',
     'rdcommon/testdriver',
     'require'
   ],

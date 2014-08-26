@@ -22,10 +22,5 @@ var require = {
 };
 
 importScripts('ext/alameda.js');
-importScripts('gelam-loader.js');
-
-GelamLoader.config({
-  standalone: false
-});
-
-GelamLoader.require(['worker-setup']);
+importScripts('worker-config.js');
+require(['worker-setup']);

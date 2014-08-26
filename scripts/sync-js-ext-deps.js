@@ -2,7 +2,7 @@
 // (This file is executed from Node in the Makefile.)
 
 /**
- * Keep a list of files from js/ext in sync with js/gelam-loader.js.
+ * Keep a list of files from js/ext in sync with js/worker-config.js.
  *
  * Presently, we configure RequireJS to allow us to specify modules
  * from _both_ of the following directories using absolute paths:
@@ -21,11 +21,11 @@
  *
  * Instead, this is run as a build step during `make build` (and
  * before any other relevant command); it explicitly lists the js/ext
- * directory and maintains a one-to-one list in js/gelam-loader.js.
+ * directory and maintains a one-to-one list in js/worker-config.js.
  *
  * In effect, the require config is still as messy as before, but less
  * error-prone than having to fiddle around with paths too much.
- * There's a comment in js/gelam-loader.js explaining which lines are
+ * There's a comment in js/worker-config.js explaining which lines are
  * automatically generated.
  */
 
@@ -34,7 +34,7 @@ var path = require('path');
 
 // The directory to grab dependencies from:
 var EXT_DIR = path.join(__dirname, '../js/ext');
-var GELAM_LOADER = path.join(__dirname, '../js/gelam-loader.js');
+var GELAM_LOADER = path.join(__dirname, '../js/worker-config.js');
 
 // Get a list of module names within $GELAM/js/ext, non-recursively,
 // and strip the extension if we're looking at a file (as opposed to a
@@ -49,9 +49,10 @@ var deps = fs.readdirSync(EXT_DIR)
           return filename.replace(/\.js$/, '');
         }
       })
-      .filter(function(filename) {
-        // Remove files starting with a period.
-        return !/^\./.test(filename);
+      .filter(function(filename, index, self) {
+        // Remove files starting with a period, and ensure only
+        // unique names in the list.
+        return !/^\./.test(filename) && self.indexOf(filename) === index;
       });
 
 function replaceInFile(f, regex, replacement) {
@@ -73,7 +74,7 @@ deps.sort();
 replaceInFile(GELAM_LOADER,
               /(<gelam-ext>.*?\n)([\s\S]*?)([ ]*\/\/ <\/gelam-ext>)/mg,
               '$1' + deps.map(function(module) {
-                return "      '%s'".replace(/%s/g, module);
+                return "      '%s': 'ext/%s'".replace(/%s/g, module);
               }).join(',\n') + '\n$3');
 
 // And, that's it.

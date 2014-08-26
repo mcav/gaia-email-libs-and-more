@@ -3,10 +3,10 @@
  **/
 define(
   [
-    'worker-support/main-router',
+    'gelam/worker-support/main-router',
     // XXX Ideally we would only load this at the request of the test, but
     // there's no real harm in always spinning this up for now.
-    'worker-support/testhelper-main',
+    'gelam/worker-support/testhelper-main',
     'rdcommon/testdriver',
     'require'
   ],
@@ -38,7 +38,7 @@ console.warn('locSource.location.search', locSource.location.search);
   }
 
   return env;
-};
+}
 
 var env = getEnv();
 

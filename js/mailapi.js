@@ -5,7 +5,9 @@
 define(
   [
     'exports',
-    'addressparser'
+    // Use a relative link so that consumers do not need to create
+    // special config to use main-frame-setup.
+    './ext/addressparser'
   ],
   function(
     exports,

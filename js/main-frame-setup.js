@@ -28,7 +28,8 @@ define(
     './worker-support/devicestorage-main',
     './worker-support/maildb-main',
     './worker-support/net-main',
-    './worker-support/wakelocks-main'
+    './worker-support/wakelocks-main',
+    'require'
   ],
   function(
     $mailapi,
@@ -38,7 +39,8 @@ define(
     $devicestorage,
     $maildb,
     $net,
-    $wakelocks
+    $wakelocks,
+    require
   ) {
 
   var control = {
@@ -91,7 +93,7 @@ define(
   };
 
   // Wire up the worker to the router
-  var worker = new Worker('js/ext/worker-bootstrap.js');
+  var worker = new Worker(require.toUrl('./worker-bootstrap.js'));
   $router.useWorker(worker);
   $router.register(control);
   $router.register(bridge);
