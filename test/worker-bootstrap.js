@@ -17,6 +17,23 @@ var gelamWorkerBaseUrl = '../js';
 importScripts('../js/ext/alameda.js');
 importScripts('../js/worker-config.js');
 
+requirejs.config({
+  // This map config exists because mailapi is loaded in a worker for tests.
+  // Normally for main-frame-setup use, mailapi references
+  // './ext/addressparser', to avoid outside consumers of gelam from needing
+  // any special config. However, this conflicts with the 'addressparser'
+  // usage inside the worker. Since this concern is only for tests, it is not
+  // the normal way gelam is consumed, this map config is set up just for the
+  // tests.
+  map: {
+    'mailapi': {
+      'ext/addressparser': 'addressparser'
+    }
+  },
+  // For tests, time out in case there are non-404 errors.
+  waitSeconds: 10
+});
+
 function makeConsoleFunc(prefix) {
   return function() {
     if (!this._enabled)

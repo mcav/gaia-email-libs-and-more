@@ -10,16 +10,6 @@
       location: 'ext/imap-handler/src',
       main: 'imap-handler'
     }],
-    // This map config exists because mailapi is sometimes loaded in a worker.
-    // Normally for main-frame-setup use, mailapi references
-    // './ext/addressparser', to avoid outside consumers of gelam from needing
-    // any special config. However, this conflicts with the 'addressparser'
-    // usage inside the worker.
-    map: {
-      'mailapi': {
-        'ext/addressparser': 'addressparser'
-      }
-    },
     paths: {
       // Configure any manual paths here:
       'bleach': 'ext/bleach.js/lib/bleach',

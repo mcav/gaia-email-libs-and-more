@@ -39,10 +39,11 @@
     paths: {
       gelam: '../',
       test: '../../test'
-    }
+    },
+    // For tests, time out in case there are non-404 errors.
+    waitSeconds: 10
   });
   require(['test/loggest-runner']);
-  console.log('GOT HERE!!!');
 </script>
 </head>
 <body style="background-color: #eeeeff;">
