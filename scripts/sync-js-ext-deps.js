@@ -55,7 +55,12 @@ var deps = fs.readdirSync(EXT_DIR)
       });
 
 function replaceInFile(f, regex, replacement) {
-  var contents = fs.readFileSync(f, { encoding: 'utf8' });
+  var enc = { encoding: 'utf8' };
+  // Node < v0.10 accepts encoding only:
+  if (parseInt(process.version.split('.')[1] < 10)) {
+    enc = enc.encoding;
+  }
+  var contents = fs.readFileSync(f, enc);
   fs.writeFileSync(f, contents.replace(regex, replacement));
 }
 
