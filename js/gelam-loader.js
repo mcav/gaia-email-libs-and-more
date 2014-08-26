@@ -85,7 +85,6 @@
     // If you see changes here because you modified our deps, commit it!
     pathsInExt: [
       // <gelam-ext>
-      '.tern-port',
       'activesync-lib',
       'addressparser',
       'alameda',

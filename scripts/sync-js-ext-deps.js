@@ -48,6 +48,10 @@ var deps = fs.readdirSync(EXT_DIR)
         } else {
           return filename.replace(/\.js$/, '');
         }
+      })
+      .filter(function(filename) {
+        // Remove files starting with a period.
+        return !/^\./.test(filename);
       });
 
 function replaceInFile(f, regex, replacement) {
