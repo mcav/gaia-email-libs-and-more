@@ -121,7 +121,7 @@ function Composer(newRecords, account, identity) {
     root.setHeader('Bcc', formatAddresses(header.bcc));
   }
 
-  root.setHeader('User-Agent', 'Mozilla Gaia Email Client 0.1alpha3');
+  root.setHeader('User-Agent', 'GaiaMail/0.2');
   root.setHeader('Date', this.sentDate.toUTCString());
   root.setHeader('Message-Id', this.messageId);
   if (body.references) {
