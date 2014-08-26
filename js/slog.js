@@ -70,7 +70,10 @@ define('slog', function(require, exports, module) {
 
     logEmitter.once(name, function(details) {
       try {
-        var result = predicate && predicate(details) || true;
+        var result = true;
+        if (predicate) {
+          result = predicate(details);
+        }
         this.eLazy.namedValue(name, result);
       } catch(e) {
         console.error('Exception running LogChecker predicate:', e);
