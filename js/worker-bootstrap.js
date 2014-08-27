@@ -17,10 +17,10 @@ window.console = {
 
 var document = { cookie: null };
 
-var require = {
-  skipDataMain: true
-};
-
+// These pragmas are for r.js and tell it to remove this code section. It will
+// be replaced with inline content after a build.
+//>>excludeStart('buildExclude', pragmas.buildExclude);
 importScripts('ext/alameda.js');
 importScripts('worker-config.js');
 require(['worker-setup']);
+//>>excludeEnd('buildExclude');

@@ -43,7 +43,22 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst 
 OUR_JS_DEPS := $(rwildcard js/*.js)
 
 install-into-gaia: clean build gaia-symlink $(OUR_JS_DEPS)
-	rsync --delete -arv --exclude='.git' js/ gaia-symlink/apps/email/js/ext/
+	rsync --delete -arv --exclude='.git' \
+	                    --exclude='.gitignore' \
+	                    --exclude='.gitmodules' \
+	                    --exclude='.jshintrc' \
+	                    --exclude='.travis.yml' \
+	                    --exclude='Gruntfile.js' \
+	                    --exclude='LICENSE' \
+	                    --exclude='Makefile' \
+	                    --exclude='NOTICE' \
+	                    --exclude='package.json' \
+	                    --exclude='README.*' \
+	                    --exclude='examples' \
+	                    --exclude='test' \
+	                    --exclude='ext/wmsy' \
+	                    --exclude='ext/rdplat' \
+	                    js/ gaia-symlink/apps/email/js/ext/
 
 build: $(OUR_JS_DEPS)
 	git submodule update --init --recursive

@@ -16,6 +16,11 @@
  * mailapi/worker-support/testhelper-main.js establish the (bounced) bridge.
  **/
 
+// Install super-simple shims here.
+window.setZeroTimeout = function(fn) {
+  setTimeout(function() { fn(); }, 0);
+};
+
 define(
   [
     // Pretty much everything could be dynamically loaded after we kickoff the
